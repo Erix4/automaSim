@@ -78,15 +78,6 @@ bool handleMouseMain(RendOb* startButton){
     //
     //printf("mouse at %d, %d\n", mx,my);
     //
-    if(collisionDet(mx, my, 0, 0, 
-                    startButton->position.x * CELL_SIZE, 
-                    startButton->position.y * CELL_SIZE, 
-                    startButton->size.x * CELL_SIZE, 
-                    startButton->size.y * CELL_SIZE)){
-        startButton->color = hex2sdl("#dbdbdb");
-        return true;
-    }
-    startButton->color = hex2sdl("#ffffff");
     return false;
 }
 

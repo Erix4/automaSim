@@ -49,6 +49,7 @@ class Button : public RendOb{
         SDL_Color hoverColor;
         SDL_Color clickColor;
         std::function<void> activationFunc;
+        bool clicked;
 };
 
 class Checkerboard : public RendOb{

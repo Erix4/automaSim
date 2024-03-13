@@ -97,7 +97,25 @@ Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
 }
 
 void Button::updateAction(mouseState){
-    //
+    if(clicked && mouseState.mouseUpEvent){
+        //unclicked
+    }
+    if(collisionDet(mx, my, 0, 0, 
+                    position.x * CELL_SIZE, 
+                    position.y * CELL_SIZE, 
+                    size.x * CELL_SIZE, 
+                    size.y * CELL_SIZE)){
+        if(!mouseState.busy && mouseState.mouseDown){
+            activationFunc();
+            clicked = true;
+            mouseState.busy = true;
+            color = clickColor;
+        }else{
+            color = hoverColor;
+        }
+    }else if(!clicked){
+        color = defaultColor;
+    }
 }
 
 Checkerboard::Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color color2, SDL_Color color3){
