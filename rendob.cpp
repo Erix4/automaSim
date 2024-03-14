@@ -82,7 +82,7 @@ Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
                 SDL_Color defaultColor = {255,255,255,255},
                 SDL_Color hoverColor = {150,150,150,255},
                 SDL_Color clickColor = {0,0,0,255},
-                std::function<void> actFunc = {}){//default constructor
+                std::function<void()> actFunc = [](){}){//default constructor
     position = {x_pos, y_pos};//default starting position
     size = {x_size, y_size};
     offsetx = 0; offsety = 0;
@@ -96,24 +96,24 @@ Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
     this->clickColor = clickColor;
 }
 
-void Button::updateAction(mouseState){
-    if(clicked && mouseState.mouseUpEvent){
-        //unclicked
+void Button::updateAction(MouseState* mouseState){
+    if(clicked && mouseState->mouseUpEvent){//unlicked
+        clicked = false;
     }
-    if(collisionDet(mx, my, 0, 0, 
+    if(collisionDet(mouseState->mx, mouseState->my, 0, 0, 
                     position.x * CELL_SIZE, 
                     position.y * CELL_SIZE, 
                     size.x * CELL_SIZE, 
-                    size.y * CELL_SIZE)){
-        if(!mouseState.busy && mouseState.mouseDown){
+                    size.y * CELL_SIZE)){//mouse over button
+        if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
             activationFunc();
             clicked = true;
-            mouseState.busy = true;
+            mouseState->busy = true;
             color = clickColor;
-        }else{
+        }else{//mouse not clicking
             color = hoverColor;
         }
-    }else if(!clicked){
+    }else if(!clicked){//button not interacted with
         color = defaultColor;
     }
 }

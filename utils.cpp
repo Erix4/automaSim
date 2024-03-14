@@ -1,5 +1,13 @@
 #include "utils.h"
 
+MouseState::MouseState(){
+    busy = false;
+    carrying = nullptr;
+    mx = 0; my = 0;
+    mouseDown = false;
+    mouseUpEvent = false;
+}
+
 SDL_Color hex2sdl(std::string input) {
 
     if (input[0] == '#')

@@ -3,12 +3,13 @@
 
 #include "utils.h"
 
+class MouseState;
 class RendOb{
     public:
         RendOb(int, int, int, int, SDL_Color);
         virtual void render(SDL_Renderer* rend, SDL_Point camPos);//draw the object onto the screen (default is just a rectangle)
         void updateAnim(){}//update animation of object (every tick)
-        virtual void updateAction(mouseState){}//update object state (every four? ticks)
+        virtual void updateAction(MouseState*){}//update object state (every four? ticks)
         void updateVisibilty(SDL_Point camPos);//update visibility based on camera position
         virtual void gridShift(int x, int y);//cells or rows were added to the grid, so a shift is necessary
     protected:
@@ -41,14 +42,14 @@ class RendOb{
 
 class Button : public RendOb{
     public:
-        Button(int, int, int, int, SDL_Color, SDL_Color, SDL_color, std::function<void>);
+        Button(int, int, int, int, SDL_Color, SDL_Color, SDL_Color, std::function<void()>);
         //void render(SDL_Renderer* rend, SDL_Point camPos);
-        void updateAction(mouseState){}
+        void updateAction(MouseState*);
     protected:
         SDL_Color defaultColor;
         SDL_Color hoverColor;
         SDL_Color clickColor;
-        std::function<void> activationFunc;
+        std::function<void()> activationFunc;
         bool clicked;
 };
 

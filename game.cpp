@@ -17,8 +17,8 @@ void render(SDL_Renderer* rend, std::vector<RendOb*> objs, SDL_Point camPos){
     SDL_RenderPresent(rend);//load backbuffer onto screen
 }
 
-int handleEvents(SDL_Event e, bool &mouseUp){
-    mouseUp = false;
+int handleEvents(SDL_Event e, MouseState* mouseState){
+    mouseState->mouseUpEvent = false;
     while( SDL_PollEvent( &e ) ){
         switch (e.type){
             case SDL_QUIT:
@@ -37,7 +37,7 @@ int handleEvents(SDL_Event e, bool &mouseUp){
                 }
                 break;
             case SDL_MOUSEBUTTONUP:
-                mouseUp = true;
+                mouseState->mouseUpEvent = true;
                 break;
             default:
                 break;
@@ -72,11 +72,10 @@ void handleKeys(SDL_Point &camPos, SDL_Point fieldSize, bool &updateVis){
     if(camPos.y > ((fieldSize.y - SCREEN_CELL_HEIGHT) << 4)) camPos.y = ((fieldSize.y - SCREEN_CELL_HEIGHT) << 4);
 }
 
-bool handleMouseMain(RendOb* startButton){
-    int mx, my;
-    SDL_GetMouseState(&mx, &my);
+bool handleMouseMain(MouseState* mouseState){
+    auto state = SDL_GetMouseState(&(mouseState->mx), &(mouseState->my));
     //
-    //printf("mouse at %d, %d\n", mx,my);
+    mouseState->mouseDown = (state == 1);
     //
     return false;
 }
@@ -100,26 +99,33 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     SDL_Color gray = hex2sdl("#878787");
     SDL_Color black = {0,0,0};
     //
-    RendOb *startButton = new RendOb(2, SCREEN_CELL_HEIGHT / 2 - 2, SCREEN_CELL_WIDTH - 4, 4, white);
+    RendOb *startButton = new Button(2, SCREEN_CELL_HEIGHT / 2 - 2, SCREEN_CELL_WIDTH - 4, 4, white, lightGray, gray, [&gameMode](){gameMode = 1;});
     menuObjects.push_back(startButton);
+	//menuObjects
+	//
     gameObjects.push_back(new Checkerboard(fieldSize, white, lightGray, gray));
     gameObjects.push_back(new RendOb(10, 10, 2, 5, gray));
     //
     int curTick = 0;
-    bool mouseUp = false;
+    //
+    MouseState *mouseState = new MouseState();
     //
     SDL_Event e;
     int quit = 0;
     while( quit == 0 ){
-        quit = handleEvents(e, mouseUp);
+        quit = handleEvents(e, mouseState);
         //
         switch(gameMode){
             case 0://title screen
-                if(handleMouseMain(startButton) && mouseUp){
+                if(handleMouseMain(mouseState) && mouseState->mouseUpEvent){
                     gameMode = 1;
                     printf("changing to gamemode 1\n");
                 }
                 //
+				for(unsigned int i = 0; i < menuObjects.size(); i++){
+					menuObjects[i]->updateAction(mouseState);
+				}
+				//
                 render(rend, menuObjects, menuPos);
                 //
                 break;
@@ -140,7 +146,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                 //
                 if(curTick % 4 == 0){
                     for(unsigned int i = 0; i < gameObjects.size(); i++){
-                        gameObjects[i]->updateAction();
+                        gameObjects[i]->updateAction(mouseState);
                     }
                     //
                     curTick = 0;

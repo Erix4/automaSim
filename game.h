@@ -24,6 +24,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight);
 
 //utils.cpp
 #include "utils.h"
+#include "rendob.h"
 //#include "matte.h"
 //#include "machine.h"
 
