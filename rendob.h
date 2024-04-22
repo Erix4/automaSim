@@ -7,8 +7,9 @@ class MouseState;
 class RendOb{
     public:
         RendOb(int, int, int, int, SDL_Color);
+        RendOb();//default constructor
         virtual void render(SDL_Renderer* rend, SDL_Point camPos);//draw the object onto the screen (default is just a rectangle)
-        void updateAnim(){}//update animation of object (every tick)
+        virtual void updateAnim(){}//update animation of object (every tick)
         virtual void updateAction(MouseState*){}//update object state (every four? ticks)
         void updateVisibilty(SDL_Point camPos);//update visibility based on camera position
         virtual void gridShift(int x, int y);//cells or rows were added to the grid, so a shift is necessary
@@ -60,7 +61,7 @@ class Checkerboard : public RendOb{
         void gridShift(int x, int y);//also changes checkerboard size
     protected:
         SDL_Color color2;
-        SDL_Color color3;
+        SDL_Color borderColor;
 };
 
 #endif

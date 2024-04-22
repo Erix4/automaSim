@@ -1,35 +1,60 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
-#include <vector>
 #include "matte.h"
-#include "utils.h"
+//#include "rendob.h"
+//#include "utils.h"
 
+enum machineType {shifter, saw, press};
+
+/*
+NOTES:
+ - for now, machine automatically activates with max speed
+ - when machines are manually activated, matte will be wasted whenever a machine outputs without
+    a ready input in the corresponding output machine
+ - for now, mattes are overridden in the process function
+ - the process function will return a bool indicating whether it was activated succesfully or
+    not, but for now it will return lots of falses because it's constantly called
+*/
 class Machine : public RendOb{
-    private:
-        std::vector<Machine*> inputs;
-        std::vector<Machine*> outputs;
+    protected:
+        Machine* inputMachs[MAX_PUTS];
+        Machine* outputMachs[MAX_PUTS];
+        Matte* inputMattes[MAX_PUTS];
+        Matte* outputMattes[MAX_PUTS];
+        int inputIdxs[MAX_PUTS];
+        //
+        int configs[MAX_CONFIGS];//configurations for any given machine
+        //
+        machineType type;
+        //std::function<void((std::vector<Matte*>)&, (std::vector<Matte*>)&)> process;
+        std::function<void(Matte*)> wasteMatte;
         //
         bool visited;
         //
-        Matte current[2];
-        Matte output[2];
+        int processTimer;
+        int machineSpeed;
         //
-        short int processCycles;
-        short int cycleState;
-        //
-        short int maxOutputs;
-        bool outputSpent[2];
-        //
-        void pushOutput();
-        virtual void process() = 0;
+        virtual bool process();
+        void updateAnim();
+        void updateAction();
     public:
-        Matte getOutput(int outputId = 0);
+        Machine();
+        Machine(int x_pos, int y_pos, int x_size, int y_size, machineType type);
+        std::optional<Matte*> getOutput(int outputId = 0);
+        void stepThroughMachine(std::stack<Machine*>& machineStack);
 };
 
-class Shifter : public Machine{
+/*Belt is slightly different because it needs a resizeable array of materials on the belt*/
+class Belt : public Machine{
     private:
-        //
+        std::vector<Matte*> movingMattes;//vector so belt can be resized
+        int beltStart;
+        int beltEnd;
+        bool process();
+    public:
+        int beltSize;
+        Belt(int x_pos, int y_pos, int x_size, int y_size);
 };
 
 #endif

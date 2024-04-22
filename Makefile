@@ -1,8 +1,8 @@
 #OBJS specifies which files to compile as part of the project
-OBJS = main.cpp game.cpp game.h utils.cpp utils.h rendob.cpp rendob.h #SDL_ttf.h
+OBJS = main.cpp game.cpp utils.cpp rendob.cpp matte.cpp machine.cpp #SDL_ttf.h
 
 #CC specifies which compiler we're using
-CC = g++
+CC = g++ -std=c++17
 
 #INCLUDE_PATHS specifies the additional include paths we'll need, for code interface
 INCLUDE_PATHS = -IC:\Users\3rix4\OneDrive\Documents\codeFolder\c\sdlGames\SDL2\include -IC:\Users\3rix4\Downloads\SDL2_ttf-devel-2.22.0-mingw\SDL2_ttf-2.22.0\x86_64-w64-mingw32\include

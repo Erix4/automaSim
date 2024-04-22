@@ -1,73 +1,126 @@
 #include "machine.h"
 
-Machine::Machine(){
+Machine::Machine() : RendOb(0,0,0,0,SDL_WHITE){
     visited = false;
+    //
+    for(int i = 0; i < MAX_PUTS; i++){
+        inputMachs[i] = nullptr;
+        outputMachs[i] = nullptr;
+        inputMattes[i] = nullptr;
+        outputMattes[i] = nullptr;
+        inputIdxs[i] = 0;
+    }
+    //
+    processTimer = 0;
+    machineSpeed = 128;//starting speed for any machine
+    //
+    for(int i = 0; i < MAX_CONFIGS; i++){
+        configs[i] = 0;
+    }
+}
+
+Machine::Machine(int x_pos, int y_pos, int x_size, int y_size, machineType type) : RendOb(x_pos, y_pos, x_size, y_size,SDL_WHITE){
+    visited = false;
+    //
+    for(int i = 0; i < MAX_PUTS; i++){
+        inputMachs[i] = nullptr;
+        outputMachs[i] = nullptr;
+        inputMattes[i] = nullptr;
+        outputMattes[i] = nullptr;
+        inputIdxs[i] = 0;
+    }
+    //
+    processTimer = 0;
+    machineSpeed = 128;//starting speed for any machine
+    //
+    for(int i = 0; i < MAX_CONFIGS; i++){
+        configs[i] = 0;
+    }
 }
 
 void Machine::updateAction(){
-    if(visited){//if already visited, nothing to do
-        return;
-    }
-    visited = true;
-    //
-    for(int i = 0; i < outputs.size(); i++){//1. recurse outputs
-        outputs[i]->updateAction();
+    if(processTimer > machineSpeed){
+        process();//transform input mattes into output mattes
     }
     //
-    process();
-    //
-    for(int i = 0; i < inputs.size(); i++){//3. recurse inputs
-        inputs[i]->updateAction();
-    }
-    //
-    //5. update anim
-    updateAnim();
+    visited = false;
 }
 
-void Machine::pushOutput(){
-    cycleState++;//2. process state
-    if(cycleState == processCycles){
-        cycleState = 0;
-        output[0] = current[0];
-        output[1] = current[1];
-        if(!outputSpent[0]){
-            //TODO: loss of material, wasted money
+void Machine::updateAnim(){
+    //
+}
+
+bool Machine::process(){//default process function
+    if(inputMattes[0] == nullptr) return false;//no material to process
+    //
+    outputMattes[0] = inputMattes[0];//pass straight through
+    inputMattes[0] = nullptr;//remove from input
+    //
+    return true;//succesfully processed
+}
+
+void Machine::stepThroughMachine(std::stack<Machine*>& machineStack){
+    if(visited) return;//if already visited leave immediately
+    //
+    for(int i = 0; i < MAX_PUTS; i++){
+        if(inputMachs[i] == nullptr) continue;//if no machine at i, skip
+        //
+        std::optional<Matte*> optOutput = inputMachs[i]->getOutput(i);//get any outputs from the input machine
+        if(!optOutput.has_value()){//an output was found
+            if(inputMattes[i] == nullptr){//check if slot is open
+                inputMattes[i] = optOutput.value();//add output to inputs
+            }else{
+                //wasteMatte(optOutput.value());//waste material pushed out by input machine
+            }
         }
-        if(!outputSpent[1]){
-            //TODO: loss of material, wasted money
-        }
-        outputSpent[0] = false;
-        outputSpent[1] = false;
+        //
+        machineStack.push(inputMachs[i]);//add input machines to stack
+    }
+    //
+    for(int i = 0; i < MAX_PUTS; i++){
+        if(outputMachs[i] == nullptr) continue;//if no machine at i, skip
+        machineStack.push(outputMachs[i]);
     }
 }
 
-Matte Machine::getOutput(int outputId){
-    if(outputId >= maxOutputs || outputSpent[outputId]){
-        return {};
+std::optional<Matte*> Machine::getOutput(int outputId){
+    if(outputMattes[outputId] == nullptr){
+        return std::nullopt;
     }else{
-        outputSpent[outputId] = true;
-        return output;
+        Matte* tempOut = outputMattes[outputId];
+        outputMattes[outputId] = nullptr;
+        return tempOut;
     }
 }
 
-
-Shifter::Shifter() : Machine(){
-    maxOutputs = 1;
-    outputSpent = {false, false};
-}
-
-void Shifter::process(){
-    pushOutput();
+Belt::Belt(int x_pos, int y_pos, int x_size, int y_size){
+    visited = false;
     //
-    if(cycleState == 0){//current is empty and ready for input
-        auto outputAttempt = inputs[0].getOutput(0);
-        if(outputAttempt.has_value()){
-            Matte rawMatte = outputAttempt.value();
-            //
-            //TODO: shifter function
-        }else{
-            return;//no input material to process
-        }
+    for(int i = 0; i < MAX_PUTS; i++){
+        inputMachs[i] = nullptr;
+        outputMachs[i] = nullptr;
+        inputMattes[i] = nullptr;
+        outputMattes[i] = nullptr;
+        inputIdxs[i] = 0;
     }
-    return;
+    //
+    //for(int i = 0;)
+    processTimer = 0;
+    machineSpeed = 128;//starting speed for any machine
+}
+
+bool Belt::process(){
+    beltEnd = beltStart;//end is always one before start
+    beltStart += 1;//rotate start position
+    if(beltStart >= beltSize){
+        beltStart = 0;
+    }
+    //
+    if(inputMattes[0] != nullptr){//a material has been input
+        movingMattes[beltStart] = inputMattes[0];//add matte to belt
+        inputMattes[0] = nullptr;//remove from input
+    }
+    outputMattes[0] = movingMattes[beltEnd];
+    //
+    return true;
 }

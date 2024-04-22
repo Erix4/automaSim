@@ -1,6 +1,6 @@
 #include "rendob.h"
 
-RendOb::RendOb(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5, SDL_Color color = {255,255,255,255}){//default constructor
+RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Color color){
     position = {x_pos, y_pos};//default starting position
     size = {x_size, y_size};
     offsetx = 0; offsety = 0;
@@ -8,6 +8,16 @@ RendOb::RendOb(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5, SDL
     visible = true;//currently in view of camera
     //
     this->color = color;
+}
+
+RendOb::RendOb(){
+    position = {0, 0};//default starting position
+    size = {0, 0};
+    offsetx = 0; offsety = 0;
+    //
+    visible = true;//currently in view of camera
+    //
+    this->color = {255,255,255,255};
 }
 
 void RendOb::render(SDL_Renderer* rend, SDL_Point camPos){
@@ -23,9 +33,9 @@ void RendOb::updateVisibilty(SDL_Point camPos){
     //bottom right corner of RendOb is to bottom right of top left corner, and vice versa
     //one cell of leeway for offset
     visible = (position.x + size.x > 16 * camPos.x - 1 &&
-        position.x < SCREEN_CELL_WIDTH &&
-        position.y + size.y > 16 * camPos.y - 1 &&
-        position.y < SCREEN_CELL_HEIGHT);
+            position.x < SCREEN_CELL_WIDTH &&
+            position.y + size.y > 16 * camPos.y - 1 &&
+            position.y < SCREEN_CELL_HEIGHT);
 }
 
 void RendOb::gridShift(int x, int y){
@@ -97,8 +107,12 @@ Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
 }
 
 void Button::updateAction(MouseState* mouseState){
-    if(clicked && mouseState->mouseUpEvent){//unlicked
-        clicked = false;
+    if(clicked){
+        if(mouseState->mouseUpEvent){//unlicked
+            clicked = false;
+            mouseState->busy = false;
+        }
+        return;
     }
     if(collisionDet(mouseState->mx, mouseState->my, 0, 0, 
                     position.x * CELL_SIZE, 
@@ -110,15 +124,15 @@ void Button::updateAction(MouseState* mouseState){
             clicked = true;
             mouseState->busy = true;
             color = clickColor;
-        }else{//mouse not clicking
-            color = hoverColor;
+            return;
         }
-    }else if(!clicked){//button not interacted with
-        color = defaultColor;
+        color = hoverColor;//not clicked
+        return;
     }
+    color = defaultColor;//button not interacted with
 }
 
-Checkerboard::Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color color2, SDL_Color color3){
+Checkerboard::Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color color2, SDL_Color borderColor){
     position = {0, 0};//default starting position
     size = {fieldSize.x, fieldSize.y};
     offsetx = 0; offsety = 0;
@@ -127,12 +141,12 @@ Checkerboard::Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color colo
     //
     this->color = color1;
     this->color2 = color2;
-    this->color3 = color3;
+    this->borderColor = borderColor;
 }
 
 void Checkerboard::render(SDL_Renderer* rend, SDL_Point camPos){
     SDL_Point startCell = {0,0};
-    SDL_SetRenderDrawColor(rend, color3.r, color3.g, color3.b, color3.a);
+    SDL_SetRenderDrawColor(rend, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
     if(camPos.x < 0){
         startCell.x = -camPos.x;
         SDL_Rect curRect = {0, 0, startCell.x * SUBCELL_SIZE, SCREEN_HEIGHT};

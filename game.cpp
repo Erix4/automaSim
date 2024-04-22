@@ -38,6 +38,7 @@ int handleEvents(SDL_Event e, MouseState* mouseState){
                 break;
             case SDL_MOUSEBUTTONUP:
                 mouseState->mouseUpEvent = true;
+				printf("mouseUp event\n");
                 break;
             default:
                 break;
@@ -87,6 +88,9 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     //
     std::vector<RendOb*> menuObjects;
     std::vector<RendOb*> gameObjects;
+    std::vector<Machine*> inputMachines;
+    //
+    std::stack<Machine*> machineStack;
     //
     SDL_Point fieldSize = {30, 25};
     SDL_Point camPos = {((fieldSize.x << 4) - SCREEN_WIDTH / SUBCELL_SIZE) >> 1,
@@ -97,13 +101,21 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     SDL_Color white = {255, 255, 255};
     SDL_Color lightGray = hex2sdl("#dbdbdb");
     SDL_Color gray = hex2sdl("#878787");
-    SDL_Color black = {0,0,0};
+	SDL_Color pureblack = {0,0,0};
+	//
+	SDL_Color lightpurple = hex2sdl("d8d4f2");
+	SDL_Color redpurple = hex2sdl("c4b2bc");
+	SDL_Color lightbrown = hex2sdl("a29587");
+	SDL_Color brown = hex2sdl("846c5b");
+	SDL_Color black = hex2sdl("332e3c");
     //
-    RendOb *startButton = new Button(2, SCREEN_CELL_HEIGHT / 2 - 2, SCREEN_CELL_WIDTH - 4, 4, white, lightGray, gray, [&gameMode](){gameMode = 1;});
+    RendOb *startButton = new Button(2, SCREEN_CELL_HEIGHT / 2 - 5, SCREEN_CELL_WIDTH - 4, 4, lightpurple, redpurple, black, [&gameMode](){gameMode = 1;});
+    RendOb *resumeButton = new Button(2, SCREEN_CELL_HEIGHT / 2 + 1, SCREEN_CELL_WIDTH - 4, 4, lightpurple, redpurple, black, [](){});
     menuObjects.push_back(startButton);
+    menuObjects.push_back(resumeButton);
 	//menuObjects
 	//
-    gameObjects.push_back(new Checkerboard(fieldSize, white, lightGray, gray));
+    gameObjects.push_back(new Checkerboard(fieldSize, brown, lightbrown, gray));
     gameObjects.push_back(new RendOb(10, 10, 2, 5, gray));
     //
     int curTick = 0;
@@ -150,6 +162,10 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                     }
                     //
                     curTick = 0;
+                }
+                //
+                for(unsigned int i = 0; i < inputMachines.size(); i++){
+                    inputMachines[i]->stepThroughMachine(machineStack);
                 }
                 //
                 render(rend, gameObjects, camPos);
