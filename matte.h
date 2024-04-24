@@ -6,7 +6,7 @@
 enum material {wood, steel};
 
 //class RendOb;
-class Matte : public RendOb{//TODO: why oh why
+class Matte : public RendOb{
     private:
         material materials[MATTE_AREA];
     public:

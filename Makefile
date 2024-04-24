@@ -5,10 +5,10 @@ OBJS = main.cpp game.cpp utils.cpp rendob.cpp matte.cpp machine.cpp #SDL_ttf.h
 CC = g++ -std=c++17
 
 #INCLUDE_PATHS specifies the additional include paths we'll need, for code interface
-INCLUDE_PATHS = -IC:\Users\3rix4\OneDrive\Documents\codeFolder\c\sdlGames\SDL2\include -IC:\Users\3rix4\Downloads\SDL2_ttf-devel-2.22.0-mingw\SDL2_ttf-2.22.0\x86_64-w64-mingw32\include
+INCLUDE_PATHS = -IC:\Users\3rix4\OneDrive\Documents\codeFolder\c\sdlGames\SDL2\include -IC:/Users/3rix4/Downloads/SDL2_ttf-devel-2.22.0-mingw/SDL2_ttf-2.22.0/x86_64-w64-mingw32/include
 
-#LIBRARY_PATHS specifies the additional library paths we'll need, extra code
-LIBRARY_PATHS = -LC:\Users\3rix4\OneDrive\Documents\codeFolder\c\sdlGames\SDL2\lib -LC:\Users\3rix4\Downloads\SDL2_ttf-devel-2.22.0-mingw\SDL2_ttf-2.22.0\x86_64-w64-mingw32\lib
+#LIBRARY_PATHS specifies the additional library paths we'll need, extra code (ttf not working here)
+LIBRARY_PATHS = -LC:\Users\3rix4\Downloads\SDL2_ttf-devel-2.22.0-mingw\SDL2_ttf-2.22.0\x86_64-w64-mingw32\lib -LC:\Users\3rix4\OneDrive\Documents\codeFolder\c\sdlGames\SDL2\lib
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
 # -w suppresses all warnings
@@ -23,4 +23,7 @@ OBJ_NAME = run
 
 #This is the target that compiles our executable
 all : $(OBJS)
-	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
+	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)gdb
+
+debug : $(OBJS)
+	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME) -g

@@ -11,7 +11,7 @@
 
 //imported libraries
 #include "SDL2/SDL.h"
-//#include "SDL_ttf.h"
+#include "SDL2a/SDL_ttf.h"
 
 //Screen dimension constants
 int const SCREEN_WIDTH = 750;//640;

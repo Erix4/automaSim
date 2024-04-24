@@ -40,6 +40,9 @@ int handleEvents(SDL_Event e, MouseState* mouseState){
                 mouseState->mouseUpEvent = true;
 				printf("mouseUp event\n");
                 break;
+            case SDL_MOUSEWHEEL://TODO: this
+                //
+                break;
             default:
                 break;
         }
@@ -67,13 +70,14 @@ void handleKeys(SDL_Point &camPos, SDL_Point fieldSize, bool &updateVis){
         updateVis = true;
     }
     //
+    //
     if(camPos.x < 0) camPos.x = 0;
     if(camPos.y < 0) camPos.y = 0;
     if(camPos.x > ((fieldSize.x - SCREEN_CELL_WIDTH) << 4)) camPos.x = ((fieldSize.x - SCREEN_CELL_WIDTH) << 4);
     if(camPos.y > ((fieldSize.y - SCREEN_CELL_HEIGHT) << 4)) camPos.y = ((fieldSize.y - SCREEN_CELL_HEIGHT) << 4);
 }
 
-bool handleMouseMain(MouseState* mouseState){
+bool handleMouseTitle(MouseState* mouseState){
     auto state = SDL_GetMouseState(&(mouseState->mx), &(mouseState->my));
     //
     mouseState->mouseDown = (state == 1);
@@ -98,7 +102,6 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     SDL_Point menuPos = {0,0};
     printf("camPos: %d, %d\n", camPos.x, camPos.y);
     //
-    SDL_Color white = {255, 255, 255};
     SDL_Color lightGray = hex2sdl("#dbdbdb");
     SDL_Color gray = hex2sdl("#878787");
 	SDL_Color pureblack = {0,0,0};
@@ -111,14 +114,20 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     //
     RendOb *startButton = new Button(2, SCREEN_CELL_HEIGHT / 2 - 5, SCREEN_CELL_WIDTH - 4, 4, lightpurple, redpurple, black, [&gameMode](){gameMode = 1;});
     RendOb *resumeButton = new Button(2, SCREEN_CELL_HEIGHT / 2 + 1, SCREEN_CELL_WIDTH - 4, 4, lightpurple, redpurple, black, [](){});
+    //Text *startText = new Text("Test", 0, 0, 300, 300, SDL_WHITE);
     menuObjects.push_back(startButton);
     menuObjects.push_back(resumeButton);
+    //menuObjects.push_back(startText);
 	//menuObjects
 	//
+    TTF_Font* font;
+    TTF_Init();
+    //
     gameObjects.push_back(new Checkerboard(fieldSize, brown, lightbrown, gray));
     gameObjects.push_back(new RendOb(10, 10, 2, 5, gray));
     //
     int curTick = 0;
+    bool renderNecessary = true;
     //
     MouseState *mouseState = new MouseState();
     //
@@ -129,7 +138,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
         //
         switch(gameMode){
             case 0://title screen
-                if(handleMouseMain(mouseState) && mouseState->mouseUpEvent){
+                if(handleMouseTitle(mouseState) && mouseState->mouseUpEvent){
                     gameMode = 1;
                     printf("changing to gamemode 1\n");
                 }

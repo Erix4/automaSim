@@ -43,18 +43,18 @@ void RendOb::gridShift(int x, int y){
     position.y += y;
 }
 
-/*Text::Text(){//default constructor
+Text::Text(){//default constructor
     this->text = "Incomplete";
     //
-    fontFile = "/assets/fonts/NotoSansJP-Regular.ttf";
-    //font = TTF_OpenFont(fontFile, 24);
+    //fontFile = "/assets/fonts/Dosis-VariableFont_wght.ttf";
+    //font = TTF_OpenFont("/assets/fonts/Dosis-VariableFont_wght.ttf", 24);
 }
 
-Text::Text(const char *text, int x_pos, int y_pos, int x_size, int y_size, SDL_Color color) :
+/*Text::Text(const char *text, int x_pos, int y_pos, int x_size, int y_size, SDL_Color color) :
     RendOb(x_pos, y_pos, x_size, y_size, color){
     //
     this->text = text;
-    fontFile = "/assets/fonts/NotoSansJP-Regular.ttf";
+    fontFile = "/assets/fonts/Dosis-VariableFont_wght.ttf";
     font = TTF_OpenFont(fontFile, 24);
 }
 //
@@ -66,7 +66,7 @@ Text::Text(const char *text, int x_pos, int y_pos, int x_size, int y_size, SDL_C
     font = TTF_OpenFont(fontFile, fontSize);
 }
 //
-void Text::render(SDL_Renderer* rend){
+void Text::render(SDL_Renderer* rend, SDL_Point camPos){
     SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, text, color); 
     //
     SDL_Texture* message = SDL_CreateTextureFromSurface(rend, surfaceMessage);//convert to texture

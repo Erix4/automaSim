@@ -93,6 +93,15 @@ std::optional<Matte*> Machine::getOutput(int outputId){
     }
 }
 
+void Machine::connectMachine(bool input, int idx, Machine* mach){
+    if(idx > MAX_PUTS) return;
+    if(input){
+        inputMachs[idx] = mach;
+    }else{
+        outputMachs[idx] = mach;
+    }
+}
+
 Belt::Belt(int x_pos, int y_pos, int x_size, int y_size){
     visited = false;
     //

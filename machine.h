@@ -43,6 +43,7 @@ class Machine : public RendOb{
         Machine(int x_pos, int y_pos, int x_size, int y_size, machineType type);
         std::optional<Matte*> getOutput(int outputId = 0);
         void stepThroughMachine(std::stack<Machine*>& machineStack);
+        void connectMachine(bool input, int idx, Machine* mach);
 };
 
 /*Belt is slightly different because it needs a resizeable array of materials on the belt*/

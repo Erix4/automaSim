@@ -21,25 +21,25 @@ class RendOb{
         SDL_Color color;
 };
 
-/*class Text : public RendOb{
+class Text : public RendOb{
     public:
         Text();
         //
-        Text(const char *text, int x_pos, int y_pos, int x_size, int y_size, SDL_Color color);
+        //Text(const char *text, int x_pos, int y_pos, int x_size, int y_size, SDL_Color color);
         //
-        Text(const char *text, int x_pos, int y_pos, int x_size, int y_size, SDL_Color color, const char *file, int fontSize = 24);
+        //Text(const char *text, int x_pos, int y_pos, int x_size, int y_size, SDL_Color color, const char *file, int fontSize = 24);
         //
-        virtual void render(SDL_Renderer* rend, SDL_Point camPos);
+        //virtual void render(SDL_Renderer* rend, SDL_Point camPos);
         //
-        void setFont(const char *file, int fontSize=24);
+        //void setFont(const char *file, int fontSize=24);
         //
-        void setFontSize(int fontSize);
+        //void setFontSize(int fontSize);
         //
     protected:
         const char *text;
         TTF_Font* font;
         const char *fontFile;
-};*/
+};
 
 class Button : public RendOb{
     public:
