@@ -4,8 +4,10 @@ MouseState::MouseState(){
     busy = false;
     carrying = nullptr;
     mx = 0; my = 0;
+    last_mx = 0; last_my = 0;
     mouseDown = false;
     mouseUpEvent = false;
+    pinchDist = 0;
 }
 
 SDL_Color hex2sdl(std::string input) {

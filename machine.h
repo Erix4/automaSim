@@ -1,7 +1,7 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
-#include "matte.h"
+#include "popup.h"
 //#include "rendob.h"
 //#include "utils.h"
 
@@ -29,6 +29,7 @@ class Machine : public RendOb{
         machineType type;
         //std::function<void((std::vector<Matte*>)&, (std::vector<Matte*>)&)> process;
         std::function<void(Matte*)> wasteMatte;
+        std::function<void(Machine*)> machineClicked;//opens machine popup
         //
         bool visited;
         //
@@ -38,6 +39,8 @@ class Machine : public RendOb{
         virtual bool process();
         void updateAnim();
         void updateAction();
+        //
+        Button* selectionButton;//button which can be pressed to bring up machine popup
     public:
         Machine();
         Machine(int x_pos, int y_pos, int x_size, int y_size, machineType type);

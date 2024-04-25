@@ -18,11 +18,10 @@ int const SCREEN_WIDTH = 750;//640;
 int const SCREEN_HEIGHT = 550;//480;
 
 //game constants
-int const CELL_SIZE = 32;
-int const SUBCELL_SIZE = CELL_SIZE / 16;
+//int PX_CELL_SIZE;// = 32;//starting, default cell size
 
-int const SCREEN_CELL_WIDTH = SCREEN_WIDTH / CELL_SIZE;
-int const SCREEN_CELL_HEIGHT = SCREEN_HEIGHT / CELL_SIZE;
+//int SCREEN_CELL_WIDTH;// = SCREEN_WIDTH / PX_CELL_SIZE;
+//int SCREEN_CELL_HEIGHT;// = SCREEN_HEIGHT / PX_CELL_SIZE;
 
 int const CAM_SPEED = 8;//speed of camera movement
 
@@ -32,18 +31,23 @@ int const MAX_CONFIGS = 4;//max number of configurations for a machine
 int const MATTE_SIZE = 4;
 int const MATTE_AREA = MATTE_SIZE * MATTE_SIZE;
 
-SDL_Color const SDL_WHITE = {255,255,255,255};
+int const MAX_ELEMENTS = 20;//max number of elements in a popup
+
+SDL_Color const SDLColor_WHITE = {255,255,255,255};
+SDL_Color const SDLColor_CLEAR = {0,0,0,0};
 
 
 class RendOb;
 class MouseState{
     public:
         MouseState();
-        bool busy;
+        bool busy;//mouse is carrying, dragging, or clicking something
         RendOb* carrying;
         int mx; int my;
+        int last_mx; int last_my;
         bool mouseDown;
         bool mouseUpEvent;
+        float pinchDist;
 };
 
 class camState{

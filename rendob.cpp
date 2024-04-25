@@ -3,7 +3,6 @@
 RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Color color){
     position = {x_pos, y_pos};//default starting position
     size = {x_size, y_size};
-    offsetx = 0; offsety = 0;
     //
     visible = true;//currently in view of camera
     //
@@ -13,7 +12,6 @@ RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Color color){
 RendOb::RendOb(){
     position = {0, 0};//default starting position
     size = {0, 0};
-    offsetx = 0; offsety = 0;
     //
     visible = true;//currently in view of camera
     //
@@ -23,19 +21,19 @@ RendOb::RendOb(){
 void RendOb::render(SDL_Renderer* rend, SDL_Point camPos){
     if(!visible) return;
     SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
-    SDL_Rect curRect = {((position.x << 4) - camPos.x + offsetx) * SUBCELL_SIZE,
-                        ((position.y << 4) - camPos.y + offsety) * SUBCELL_SIZE,
-                        size.x * CELL_SIZE,
-                        size.y * CELL_SIZE};
+    SDL_Rect curRect = {((position.x * PX_CELL_SIZE) - camPos.x),
+                        ((position.y * PX_CELL_SIZE) - camPos.y),
+                        size.x * PX_CELL_SIZE,
+                        size.y * PX_CELL_SIZE};
     SDL_RenderFillRect(rend, &curRect);
 }
 void RendOb::updateVisibilty(SDL_Point camPos){
     //bottom right corner of RendOb is to bottom right of top left corner, and vice versa
     //one cell of leeway for offset
-    visible = (position.x + size.x > 16 * camPos.x - 1 &&
-            position.x < SCREEN_CELL_WIDTH &&
-            position.y + size.y > 16 * camPos.y - 1 &&
-            position.y < SCREEN_CELL_HEIGHT);
+    visible = (((position.x + size.x + 1) * PX_CELL_SIZE) > camPos.x &&
+            (position.x * PX_CELL_SIZE) < camPos.x + SCREEN_WIDTH &&
+            ((position.y + size.y + 1) * PX_CELL_SIZE) >camPos.y &&
+            (position.y * PX_CELL_SIZE) < camPos.y + SCREEN_HEIGHT);
 }
 
 void RendOb::gridShift(int x, int y){
@@ -95,7 +93,6 @@ Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
                 std::function<void()> actFunc = [](){}){//default constructor
     position = {x_pos, y_pos};//default starting position
     size = {x_size, y_size};
-    offsetx = 0; offsety = 0;
     //
     visible = true;//currently in view of camera
     activationFunc = actFunc;//function called when button pressed
@@ -104,6 +101,7 @@ Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
     this->defaultColor = defaultColor;
     this->hoverColor = hoverColor;
     this->clickColor = clickColor;
+    printf("initialized properly\n");
 }
 
 void Button::updateAction(MouseState* mouseState){
@@ -115,15 +113,15 @@ void Button::updateAction(MouseState* mouseState){
         return;
     }
     if(collisionDet(mouseState->mx, mouseState->my, 0, 0, 
-                    position.x * CELL_SIZE, 
-                    position.y * CELL_SIZE, 
-                    size.x * CELL_SIZE, 
-                    size.y * CELL_SIZE)){//mouse over button
+                    position.x * PX_CELL_SIZE, 
+                    position.y * PX_CELL_SIZE, 
+                    size.x * PX_CELL_SIZE, 
+                    size.y * PX_CELL_SIZE)){//mouse over button
         if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
-            activationFunc();
             clicked = true;
             mouseState->busy = true;
             color = clickColor;
+            activationFunc();
             return;
         }
         color = hoverColor;//not clicked
@@ -132,19 +130,42 @@ void Button::updateAction(MouseState* mouseState){
     color = defaultColor;//button not interacted with
 }
 
-Checkerboard::Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color color2, SDL_Color borderColor){
+Checkerboard::Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color color2){
     position = {0, 0};//default starting position
     size = {fieldSize.x, fieldSize.y};
-    offsetx = 0; offsety = 0;
+    printf("set to size to (%d, %d)\n", size.x, size.y);
     //
     visible = true;//currently in view of camera
     //
     this->color = color1;
     this->color2 = color2;
-    this->borderColor = borderColor;
 }
 
 void Checkerboard::render(SDL_Renderer* rend, SDL_Point camPos){
+    SDL_Rect curRect;
+    for(int i = 0; i < size.x; i++){
+        for(int j = 0; j < size.y; j++){
+            //printf("rendering on (%d, %d) with %d\n", i, j, PX_CELL_SIZE);
+            if((i+j) % 2 == 0){
+                SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
+                curRect = {(position.x + i) * PX_CELL_SIZE - camPos.x,
+                            (position.y + j) * PX_CELL_SIZE - camPos.y,
+                            PX_CELL_SIZE,
+                            PX_CELL_SIZE};
+                SDL_RenderFillRect(rend, &curRect);
+            }else{
+                SDL_SetRenderDrawColor(rend, color2.r, color2.g, color2.b, color2.a);
+                curRect = {(position.x + i) * PX_CELL_SIZE - camPos.x,
+                            (position.y + j) * PX_CELL_SIZE - camPos.y,
+                            PX_CELL_SIZE,
+                            PX_CELL_SIZE};
+                SDL_RenderFillRect(rend, &curRect);
+            }
+        }
+    }
+}
+
+/*void Checkerboard::render(SDL_Renderer* rend, SDL_Point camPos){
     SDL_Point startCell = {0,0};
     SDL_SetRenderDrawColor(rend, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
     if(camPos.x < 0){
@@ -170,22 +191,22 @@ void Checkerboard::render(SDL_Renderer* rend, SDL_Point camPos){
         for(int j = startCell.y; j < (size.y << 4) && j - camPos.y < (SCREEN_CELL_HEIGHT << 4) + 1; j++){
             SDL_Rect curRect = {((i * 2 + (j % 2)) * 16 - camPos.x) * SUBCELL_SIZE,
                                 (j * 16 - camPos.y) * SUBCELL_SIZE,
-                                CELL_SIZE,
-                                CELL_SIZE};
+                                PX_CELL_SIZE,
+                                PX_CELL_SIZE};
             SDL_RenderFillRect(rend, &curRect);
         }
     }
-    SDL_SetRenderDrawColor(rend, color2.r, color2.g, color2.b, color2.a);//TODO: fix
+    SDL_SetRenderDrawColor(rend, color2.r, color2.g, color2.b, color2.a);
     for(int i = startCell.x; i < (size.x << 4) && i - camPos.x < (SCREEN_CELL_WIDTH << 4) + 1; i++){
         for(int j = startCell.y; j < (size.y << 4) && j - camPos.y < (SCREEN_CELL_HEIGHT << 4) + 1; j++){
             SDL_Rect curRect = {((i * 2 + (j + 1 % 2)) * 16 - camPos.x) * SUBCELL_SIZE,
                                 (j * 16 - camPos.y) * SUBCELL_SIZE,
-                                CELL_SIZE,
-                                CELL_SIZE};
+                                PX_CELL_SIZE,
+                                PX_CELL_SIZE};
             SDL_RenderFillRect(rend, &curRect);
         }
     }
-}
+}*/
 
 void Checkerboard::gridShift(int x, int y){
     size.x += x;

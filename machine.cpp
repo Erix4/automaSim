@@ -1,6 +1,6 @@
 #include "machine.h"
 
-Machine::Machine() : RendOb(0,0,0,0,SDL_WHITE){
+Machine::Machine() : RendOb(0,0,0,0,SDLColor_WHITE){
     visited = false;
     //
     for(int i = 0; i < MAX_PUTS; i++){
@@ -19,7 +19,7 @@ Machine::Machine() : RendOb(0,0,0,0,SDL_WHITE){
     }
 }
 
-Machine::Machine(int x_pos, int y_pos, int x_size, int y_size, machineType type) : RendOb(x_pos, y_pos, x_size, y_size,SDL_WHITE){
+Machine::Machine(int x_pos, int y_pos, int x_size, int y_size, machineType type) : RendOb(x_pos, y_pos, x_size, y_size,SDLColor_WHITE){
     visited = false;
     //
     for(int i = 0; i < MAX_PUTS; i++){

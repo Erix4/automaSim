@@ -3,6 +3,10 @@
 
 #include "utils.h"
 
+extern int PX_CELL_SIZE;
+extern int SCREEN_CELL_WIDTH;
+extern int SCREEN_CELL_HEIGHT;
+
 class MouseState;
 class RendOb{
     public:
@@ -14,7 +18,6 @@ class RendOb{
         void updateVisibilty(SDL_Point camPos);//update visibility based on camera position
         virtual void gridShift(int x, int y);//cells or rows were added to the grid, so a shift is necessary
     protected:
-        short int offsetx, offsety;
         bool visible;
         SDL_Point position;
         SDL_Point size;
@@ -56,12 +59,11 @@ class Button : public RendOb{
 
 class Checkerboard : public RendOb{
     public:
-        Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color color2, SDL_Color color3);
+        Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color color2);
         void render(SDL_Renderer* rend, SDL_Point camPos);
         void gridShift(int x, int y);//also changes checkerboard size
     protected:
         SDL_Color color2;
-        SDL_Color borderColor;
 };
 
 #endif
