@@ -42,8 +42,8 @@ class Machine : public RendOb{
         //
         Button* selectionButton;//button which can be pressed to bring up machine popup
     public:
-        Machine();
-        Machine(int x_pos, int y_pos, int x_size, int y_size, machineType type);
+        Machine() : Machine(0, 0, shifter){}//default values for machine
+        Machine(int x_pos, int y_pos, machineType type);
         std::optional<Matte*> getOutput(int outputId = 0);
         void stepThroughMachine(std::stack<Machine*>& machineStack);
         void connectMachine(bool input, int idx, Machine* mach);
@@ -58,6 +58,7 @@ class Belt : public Machine{
         bool process();
     public:
         int beltSize;
+        Belt() : Belt(0, 0, 1, 1){}
         Belt(int x_pos, int y_pos, int x_size, int y_size);
 };
 

@@ -33,8 +33,14 @@ int const MATTE_AREA = MATTE_SIZE * MATTE_SIZE;
 
 int const MAX_ELEMENTS = 20;//max number of elements in a popup
 
+SDL_Color hex2sdl(std::string input);
+
 SDL_Color const SDLColor_WHITE = {255,255,255,255};
+SDL_Color const SDLColor_BLACK = {0,0,0,255};
 SDL_Color const SDLColor_CLEAR = {0,0,0,0};
+SDL_Color const SDLColor_LIGHT_PURPLE = hex2sdl("d8d4f2");
+SDL_Color const SDLColor_RED_PURPLE = hex2sdl("c4b2bc");
+SDL_Color const SDLColor_LIGHT_GRAY = hex2sdl("dbdbdb");
 
 
 class RendOb;
@@ -58,8 +64,6 @@ class camState{
         int cellSize;//
         void setSubcellSize(int sub){subcellSize = sub; cellSize = (sub << 4);};
 };
-
-SDL_Color hex2sdl(std::string input);
 
 bool collisionDet(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2);
 

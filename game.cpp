@@ -46,7 +46,8 @@ int handleEvents(SDL_Event e, MouseState* mouseState){
                 mouseState->mouseUpEvent = true;
 				printf("mouseUp event\n");
                 break;
-            case SDL_MOUSEWHEEL://TODO: this
+            case SDL_MOUSEWHEEL:
+                mouseState->pinchDist = (float)e.wheel.y / 100;
                 //
                 break;
             case SDL_MULTIGESTURE:
@@ -139,19 +140,15 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     SDL_Point menuPos = {0,0};
     printf("camPos: %d, %d\n", camPos.x, camPos.y);
     //
-    SDL_Color lightGray = hex2sdl("#dbdbdb");
     SDL_Color gray = hex2sdl("#878787");
-	SDL_Color pureblack = {0,0,0};
 	//
-	SDL_Color lightpurple = hex2sdl("d8d4f2");
-	SDL_Color redpurple = hex2sdl("c4b2bc");
 	SDL_Color lightbrown = hex2sdl("a29587");
 	SDL_Color lightlightbrown = hex2sdl("ada092");
 	SDL_Color brown = hex2sdl("846c5b");
 	SDL_Color black = hex2sdl("332e3c");
     //
-    RendOb *startButton = new Button(2, SCREEN_CELL_HEIGHT / 2 - 5, SCREEN_CELL_WIDTH - 4, 4, lightpurple, redpurple, black, std::bind(startGame, &gameMode, mouseState));
-    RendOb *resumeButton = new Button(2, SCREEN_CELL_HEIGHT / 2 + 1, SCREEN_CELL_WIDTH - 4, 4, lightpurple, redpurple, black, [](){});
+    RendOb *startButton = new Button(2, SCREEN_CELL_HEIGHT / 2 - 5, SCREEN_CELL_WIDTH - 4, 4, SDLColor_LIGHT_PURPLE, SDLColor_RED_PURPLE, black, std::bind(startGame, &gameMode, mouseState));
+    RendOb *resumeButton = new Button(2, SCREEN_CELL_HEIGHT / 2 + 1, SCREEN_CELL_WIDTH - 4, 4, SDLColor_LIGHT_PURPLE, SDLColor_RED_PURPLE, black, [](){});
     //Text *startText = new Text("Test", 0, 0, 300, 300, SDL_WHITE);
     menuObjects.push_back(startButton);
     menuObjects.push_back(resumeButton);
@@ -162,7 +159,10 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     //TTF_Init();
     //
     gameObjects.push_back(new Checkerboard(fieldSize, lightlightbrown, lightbrown));
-    gameObjects.push_back(new RendOb(10, 10, 2, 5, brown));
+    //gameObjects.push_back(new RendOb(10, 10, 2, 5, brown));
+    gameObjects.push_back(new Machine(5, 5, shifter));
+    gameObjects.push_back(new Machine());
+    gameObjects.push_back(new ShopPopup(200, 50, 30));
     //
     int curTick = 0;
     //
@@ -180,7 +180,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
 					menuObjects[i]->updateAction(mouseState);
 				}
 				//
-                render(rend, menuObjects, menuPos, pureblack);
+                render(rend, menuObjects, menuPos, SDLColor_BLACK);
                 //
                 if(gameMode == 1){
                     printf("last, busy: %d\n", mouseState->busy);
@@ -221,13 +221,12 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                 }
                 //
                 if(mouseState->pinchDist != 0){//this could be made smoother
-                    printf("pinchDist: %f\n", mouseState->pinchDist);
-                    if(mouseState->pinchDist > 0){
-                        PX_CELL_SIZE = ((float)PX_CELL_SIZE * ((mouseState->pinchDist * 20) + 1));
-                    }else{
-                        PX_CELL_SIZE = ((float)PX_CELL_SIZE * ((mouseState->pinchDist * 20) - 1));
-                    }
-                    printf("new cell size: %d\n", PX_CELL_SIZE);
+                    float growthFactor = (mouseState->pinchDist * 20) + 1;
+                    //printf("pinchDist: %f\n", mouseState->pinchDist);
+                    PX_CELL_SIZE = ((float)PX_CELL_SIZE * growthFactor);
+                    camPos.x += (mouseState->mx + camPos.x) * (growthFactor - 1);//adjust camera to zoom around mouse
+                    camPos.y += (mouseState->my + camPos.y) * (growthFactor - 1);
+                    //printf("calc cell size: %d\n", PX_CELL_SIZE);
                     updateVis = true;
                 }
                 //

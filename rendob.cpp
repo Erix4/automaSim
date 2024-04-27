@@ -41,6 +41,11 @@ void RendOb::gridShift(int x, int y){
     position.y += y;
 }
 
+void RendOb::setPosition(int x, int y){
+    position.x = x;
+    position.y = y;
+}
+
 Text::Text(){//default constructor
     this->text = "Incomplete";
     //
@@ -91,7 +96,7 @@ Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
                 SDL_Color hoverColor = {150,150,150,255},
                 SDL_Color clickColor = {0,0,0,255},
                 std::function<void()> actFunc = [](){}){//default constructor
-    position = {x_pos, y_pos};//default starting position
+    position = {x_pos, y_pos};
     size = {x_size, y_size};
     //
     visible = true;//currently in view of camera
@@ -106,7 +111,7 @@ Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
 
 void Button::updateAction(MouseState* mouseState){
     if(clicked){
-        if(mouseState->mouseUpEvent){//unlicked
+        if(!mouseState->mouseDown){//unlicked
             clicked = false;
             mouseState->busy = false;
         }
@@ -117,6 +122,46 @@ void Button::updateAction(MouseState* mouseState){
                     position.y * PX_CELL_SIZE, 
                     size.x * PX_CELL_SIZE, 
                     size.y * PX_CELL_SIZE)){//mouse over button
+        if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
+            clicked = true;
+            mouseState->busy = true;
+            color = clickColor;
+            activationFunc();
+            return;
+        }
+        color = hoverColor;//not clicked
+        return;
+    }
+    color = defaultColor;//button not interacted with
+}
+
+void Button::setActivationFunc(std::function<void()> func){
+    activationFunc = func;
+}
+
+void ButtonStatic::render(SDL_Renderer* rend, SDL_Point camPos){
+    if(!visible) return;
+    SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
+    SDL_Rect curRect = {(position.x),
+                        (position.y),
+                        size.x,
+                        size.y};
+    SDL_RenderFillRect(rend, &curRect);
+}
+
+void ButtonStatic::updateAction(MouseState* mouseState){
+    if(clicked){
+        if(!mouseState->mouseDown){//unclicked
+            clicked = false;
+            mouseState->busy = false;
+        }
+        return;
+    }
+    if(collisionDet(mouseState->mx, mouseState->my, 0, 0, 
+                    position.x, 
+                    position.y, 
+                    size.x, 
+                    size.y)){//mouse over button
         if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
             clicked = true;
             mouseState->busy = true;
@@ -164,49 +209,6 @@ void Checkerboard::render(SDL_Renderer* rend, SDL_Point camPos){
         }
     }
 }
-
-/*void Checkerboard::render(SDL_Renderer* rend, SDL_Point camPos){
-    SDL_Point startCell = {0,0};
-    SDL_SetRenderDrawColor(rend, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
-    if(camPos.x < 0){
-        startCell.x = -camPos.x;
-        SDL_Rect curRect = {0, 0, startCell.x * SUBCELL_SIZE, SCREEN_HEIGHT};
-        SDL_RenderFillRect(rend, &curRect);
-        //
-        curRect = {(startCell.x + (size.x << 4)) * SUBCELL_SIZE, 0, (startCell.x + 10) * SUBCELL_SIZE, SCREEN_HEIGHT};
-        SDL_RenderFillRect(rend, &curRect);
-    }
-    if(camPos.y < 0){
-        startCell.y = -camPos.y;
-        SDL_Rect curRect = {0, 0, SCREEN_WIDTH, startCell.y * SUBCELL_SIZE};
-        SDL_RenderFillRect(rend, &curRect);
-        //
-        curRect = {0, (startCell.y + (size.y << 4)) * SUBCELL_SIZE, SCREEN_WIDTH, (startCell.y + 1) * SUBCELL_SIZE};
-        SDL_RenderFillRect(rend, &curRect);
-    }
-    //
-    //printf("start x: %d, size x: %d, screen width: %d\n", startCell.x, (size.x << 4), (SCREEN_CELL_WIDTH << 4));
-    SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
-    for(int i = startCell.x; i < (size.x << 4) && i - camPos.x < (SCREEN_CELL_WIDTH << 4) + 1; i++){
-        for(int j = startCell.y; j < (size.y << 4) && j - camPos.y < (SCREEN_CELL_HEIGHT << 4) + 1; j++){
-            SDL_Rect curRect = {((i * 2 + (j % 2)) * 16 - camPos.x) * SUBCELL_SIZE,
-                                (j * 16 - camPos.y) * SUBCELL_SIZE,
-                                PX_CELL_SIZE,
-                                PX_CELL_SIZE};
-            SDL_RenderFillRect(rend, &curRect);
-        }
-    }
-    SDL_SetRenderDrawColor(rend, color2.r, color2.g, color2.b, color2.a);
-    for(int i = startCell.x; i < (size.x << 4) && i - camPos.x < (SCREEN_CELL_WIDTH << 4) + 1; i++){
-        for(int j = startCell.y; j < (size.y << 4) && j - camPos.y < (SCREEN_CELL_HEIGHT << 4) + 1; j++){
-            SDL_Rect curRect = {((i * 2 + (j + 1 % 2)) * 16 - camPos.x) * SUBCELL_SIZE,
-                                (j * 16 - camPos.y) * SUBCELL_SIZE,
-                                PX_CELL_SIZE,
-                                PX_CELL_SIZE};
-            SDL_RenderFillRect(rend, &curRect);
-        }
-    }
-}*/
 
 void Checkerboard::gridShift(int x, int y){
     size.x += x;

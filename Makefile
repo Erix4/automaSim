@@ -1,5 +1,5 @@
 #OBJS specifies which files to compile as part of the project
-OBJS = main.cpp game.cpp utils.cpp rendob.cpp matte.cpp machine.cpp #SDL_ttf.h
+OBJS = main.cpp game.cpp utils.cpp rendob.cpp matte.cpp machine.cpp popup.cpp #SDL_ttf.h
 
 #CC specifies which compiler we're using
 CC = g++ -std=c++17

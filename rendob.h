@@ -17,6 +17,7 @@ class RendOb{
         virtual void updateAction(MouseState*){}//update object state (every four? ticks)
         void updateVisibilty(SDL_Point camPos);//update visibility based on camera position
         virtual void gridShift(int x, int y);//cells or rows were added to the grid, so a shift is necessary
+        void setPosition(int x, int y);
     protected:
         bool visible;
         SDL_Point position;
@@ -46,15 +47,25 @@ class Text : public RendOb{
 
 class Button : public RendOb{
     public:
+        Button() : Button(0,0,5,5,SDLColor_BLACK,{150,150,150,255},SDLColor_CLEAR, nullptr){}
         Button(int, int, int, int, SDL_Color, SDL_Color, SDL_Color, std::function<void()>);
         //void render(SDL_Renderer* rend, SDL_Point camPos);
-        void updateAction(MouseState*);
+        virtual void updateAction(MouseState*);
+        void setActivationFunc(std::function<void()> func);
     protected:
         SDL_Color defaultColor;
         SDL_Color hoverColor;
         SDL_Color clickColor;
         std::function<void()> activationFunc;
         bool clicked;
+};
+
+class ButtonStatic : public Button{
+    private:
+        void render(SDL_Renderer* rend, SDL_Point camPos);
+    public:
+        using Button::Button;
+        void updateAction(MouseState*);
 };
 
 class Checkerboard : public RendOb{

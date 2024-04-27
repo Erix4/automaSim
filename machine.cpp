@@ -1,6 +1,6 @@
 #include "machine.h"
 
-Machine::Machine() : RendOb(0,0,0,0,SDLColor_WHITE){
+Machine::Machine(int x_pos, int y_pos, machineType type) : RendOb(x_pos, y_pos, 2, 2, SDLColor_WHITE){
     visited = false;
     //
     for(int i = 0; i < MAX_PUTS; i++){
@@ -14,24 +14,7 @@ Machine::Machine() : RendOb(0,0,0,0,SDLColor_WHITE){
     processTimer = 0;
     machineSpeed = 128;//starting speed for any machine
     //
-    for(int i = 0; i < MAX_CONFIGS; i++){
-        configs[i] = 0;
-    }
-}
-
-Machine::Machine(int x_pos, int y_pos, int x_size, int y_size, machineType type) : RendOb(x_pos, y_pos, x_size, y_size,SDLColor_WHITE){
-    visited = false;
-    //
-    for(int i = 0; i < MAX_PUTS; i++){
-        inputMachs[i] = nullptr;
-        outputMachs[i] = nullptr;
-        inputMattes[i] = nullptr;
-        outputMattes[i] = nullptr;
-        inputIdxs[i] = 0;
-    }
-    //
-    processTimer = 0;
-    machineSpeed = 128;//starting speed for any machine
+    this->type = type;
     //
     for(int i = 0; i < MAX_CONFIGS; i++){
         configs[i] = 0;
