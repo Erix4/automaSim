@@ -12,6 +12,7 @@
 //imported libraries
 #include "SDL2/SDL.h"
 #include "SDL2a/SDL_ttf.h"
+#include "SDL2/SDL_image.h"
 
 //Screen dimension constants
 int const SCREEN_WIDTH = 750;//640;
@@ -35,12 +36,22 @@ int const MAX_ELEMENTS = 20;//max number of elements in a popup
 
 SDL_Color hex2sdl(std::string input);
 
+//basics
 SDL_Color const SDLColor_WHITE = {255,255,255,255};
 SDL_Color const SDLColor_BLACK = {0,0,0,255};
 SDL_Color const SDLColor_CLEAR = {0,0,0,0};
-SDL_Color const SDLColor_LIGHT_PURPLE = hex2sdl("d8d4f2");
-SDL_Color const SDLColor_RED_PURPLE = hex2sdl("c4b2bc");
 SDL_Color const SDLColor_LIGHT_GRAY = hex2sdl("dbdbdb");
+
+//old theme
+SDL_Color const SDLColor_LIGHT_PURPLE = hex2sdl("d8d4f2");//old
+SDL_Color const SDLColor_RED_PURPLE = hex2sdl("c4b2bc");//old
+SDL_Color const SDLColor_LIGHT_BLACK = hex2sdl("332e3c");//old
+SDL_Color const SDLColor_BROWN = hex2sdl("846c5b");//old
+
+//new theme
+SDL_Color const SDLColor_DARK_BLUE = hex2sdl("2f4858");
+SDL_Color const SDLColor_BLUE = hex2sdl("33658a");
+SDL_Color const SDLColor_ORANGE = hex2sdl("F6AE2D");
 
 
 class RendOb;
@@ -54,6 +65,7 @@ class MouseState{
         bool mouseDown;
         bool mouseUpEvent;
         float pinchDist;
+        int scrollX;
 };
 
 class camState{

@@ -7,24 +7,31 @@ RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Color color){
     visible = true;//currently in view of camera
     //
     this->color = color;
+    usingImage = false;
 }
 
-RendOb::RendOb(){
-    position = {0, 0};//default starting position
-    size = {0, 0};
+RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Texture *texture){
+    position = {x_pos, y_pos};//default starting position
+    size = {x_size, y_size};
     //
     visible = true;//currently in view of camera
     //
-    this->color = {255,255,255,255};
+    this->texture = texture;
+    usingImage = true;
 }
 
 void RendOb::render(SDL_Renderer* rend, SDL_Point camPos){
     if(!visible) return;
-    SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
     SDL_Rect curRect = {((position.x * PX_CELL_SIZE) - camPos.x),
                         ((position.y * PX_CELL_SIZE) - camPos.y),
                         size.x * PX_CELL_SIZE,
                         size.y * PX_CELL_SIZE};
+    if(usingImage){
+        SDL_RenderCopy(rend, texture, NULL, &curRect);
+        //
+        return;
+    }
+    SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
     SDL_RenderFillRect(rend, &curRect);
 }
 void RendOb::updateVisibilty(SDL_Point camPos){
@@ -44,6 +51,12 @@ void RendOb::gridShift(int x, int y){
 void RendOb::setPosition(int x, int y){
     position.x = x;
     position.y = y;
+}
+
+RendOb::~RendOb(){
+    if(usingImage){
+        SDL_DestroyTexture(texture);
+    }
 }
 
 Text::Text(){//default constructor
@@ -106,7 +119,30 @@ Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
     this->defaultColor = defaultColor;
     this->hoverColor = hoverColor;
     this->clickColor = clickColor;
-    printf("initialized properly\n");
+    usingImage = false;
+    //
+    lastCamPos = {0,0};
+}
+
+Button::Button(int x_pos, int y_pos, int x_size, int y_size,
+                SDL_Texture *defaultTexture,
+                SDL_Texture *hoverTexture,
+                SDL_Texture *clickTexture,
+                std::function<void()> actFunc = [](){}){//default constructor
+    position = {x_pos, y_pos};
+    size = {x_size, y_size};
+    //
+    visible = true;//currently in view of camera
+    activationFunc = actFunc;//function called when button pressed
+    //
+    this->color = defaultColor;
+    this->texture = defaultTexture;
+    this->defaultTexture = defaultTexture;
+    this->hoverTexture = hoverTexture;
+    this->clickTexture = clickTexture;
+    usingImage = true;
+    //
+    lastCamPos = {0,0};
 }
 
 void Button::updateAction(MouseState* mouseState){
@@ -118,8 +154,8 @@ void Button::updateAction(MouseState* mouseState){
         return;
     }
     if(collisionDet(mouseState->mx, mouseState->my, 0, 0, 
-                    position.x * PX_CELL_SIZE, 
-                    position.y * PX_CELL_SIZE, 
+                    position.x * PX_CELL_SIZE - lastCamPos.x, 
+                    position.y * PX_CELL_SIZE - lastCamPos.y, 
                     size.x * PX_CELL_SIZE, 
                     size.y * PX_CELL_SIZE)){//mouse over button
         if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
@@ -141,12 +177,20 @@ void Button::setActivationFunc(std::function<void()> func){
 
 void ButtonStatic::render(SDL_Renderer* rend, SDL_Point camPos){
     if(!visible) return;
-    SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
     SDL_Rect curRect = {(position.x),
                         (position.y),
                         size.x,
                         size.y};
+    //
+    if(usingImage){
+        SDL_RenderCopy(rend, texture, NULL, &curRect);
+        //
+        return;
+    }
+    SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
     SDL_RenderFillRect(rend, &curRect);
+    //
+    lastCamPos = camPos;
 }
 
 void ButtonStatic::updateAction(MouseState* mouseState){
@@ -166,13 +210,63 @@ void ButtonStatic::updateAction(MouseState* mouseState){
             clicked = true;
             mouseState->busy = true;
             color = clickColor;
+            texture = clickTexture;
             activationFunc();
             return;
         }
         color = hoverColor;//not clicked
+        texture = hoverTexture;
         return;
     }
     color = defaultColor;//button not interacted with
+    texture = defaultTexture;
+}
+
+void ButtonPx::render(SDL_Renderer* rend, SDL_Point camPos){
+    if(!visible) return;
+    SDL_Rect curRect = {(position.x - camPos.x),
+                        (position.y - camPos.y),
+                        size.x,
+                        size.y};
+    //
+    if(usingImage){
+        SDL_RenderCopy(rend, texture, NULL, &curRect);
+        //
+        return;
+    }
+    SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
+    SDL_RenderFillRect(rend, &curRect);
+}
+
+void ButtonPx::updateAction(MouseState* mouseState){
+    if(clicked){
+        if(!mouseState->mouseDown){//unclicked
+            clicked = false;
+            mouseState->busy = false;
+        }
+        return;
+    }
+    if(collisionDet(mouseState->mx, mouseState->my, 0, 0, 
+                    position.x - lastCamPos.x, 
+                    position.y - lastCamPos.y, 
+                    size.x, 
+                    size.y)){//mouse over button
+        printf("mouse over\n");
+        if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
+            printf("clicked");
+            clicked = true;
+            mouseState->busy = true;
+            color = clickColor;
+            texture = clickTexture;
+            activationFunc();
+            return;
+        }
+        color = hoverColor;//not clicked
+        texture = hoverTexture;
+        return;
+    }
+    color = defaultColor;//button not interacted with
+    texture = defaultTexture;
 }
 
 Checkerboard::Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color color2){

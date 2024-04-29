@@ -14,12 +14,6 @@ Matte::Matte(Matte& original){
     }
 }
 
-Matte::Matte(){
-    for(int i = 0; i < MATTE_AREA; i++){
-        materials[i] = wood;
-    }
-}
-
 void Matte::render(SDL_Renderer* rend){
     for(int i = 0; i < MATTE_AREA; i++){
         SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);

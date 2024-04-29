@@ -5,7 +5,7 @@
 //#include "rendob.h"
 //#include "utils.h"
 
-enum machineType {shifter, saw, press};
+enum machineType {shifter, smelter, saw, rotater, press, recycle};
 
 /*
 NOTES:
@@ -33,6 +33,8 @@ class Machine : public RendOb{
         //
         bool visited;
         //
+        bool placing;//whether machine is currently being placed by mouse
+        //
         int processTimer;
         int machineSpeed;
         //
@@ -43,7 +45,8 @@ class Machine : public RendOb{
         Button* selectionButton;//button which can be pressed to bring up machine popup
     public:
         Machine() : Machine(0, 0, shifter){}//default values for machine
-        Machine(int x_pos, int y_pos, machineType type);
+        Machine(int x_pos, int y_pos, machineType type);//machine with no texture
+        Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture);//machine with texture
         std::optional<Matte*> getOutput(int outputId = 0);
         void stepThroughMachine(std::stack<Machine*>& machineStack);
         void connectMachine(bool input, int idx, Machine* mach);

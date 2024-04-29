@@ -24,6 +24,7 @@ void render(SDL_Renderer* rend, std::vector<RendOb*> objs, SDL_Point camPos, SDL
 int handleEvents(SDL_Event e, MouseState* mouseState){
     mouseState->mouseUpEvent = false;
     mouseState->pinchDist = 0;
+    mouseState->scrollX = 0;
     //
     while( SDL_PollEvent( &e ) ){
         switch (e.type){
@@ -48,6 +49,8 @@ int handleEvents(SDL_Event e, MouseState* mouseState){
                 break;
             case SDL_MOUSEWHEEL:
                 mouseState->pinchDist = (float)e.wheel.y / 100;
+                //
+                mouseState->scrollX = e.wheel.x;
                 //
                 break;
             case SDL_MULTIGESTURE:
@@ -114,6 +117,30 @@ void machineClicked(Machine* machine, int speed, int progress){
     //
 }
 
+void newMachine(int type, std::vector<RendOb*> *gameObjects, MouseState *mouseState, SDL_Texture *textures[]){
+    printf("making new machine\n");
+    RendOb* newMach = new Machine(mouseState->mx, mouseState->my, (machineType)type, textures[type]);
+    //
+    gameObjects->push_back(newMach);
+    //
+    mouseState->busy = true;
+    mouseState->carrying = newMach;
+}
+
+void loadTextures(SDL_Texture *textures[], SDL_Renderer* rend){
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+    //SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+    textures[menuStartButton] = IMG_LoadTexture(rend, "assets/images/menuStartButton.png");
+    textures[menuStartButtonHover] = IMG_LoadTexture(rend, "assets/images/menuStartButtonHover.png");
+    textures[menuStartButtonClick] = IMG_LoadTexture(rend, "assets/images/menuStartButtonClick.png");
+    textures[menuContinueButton] = IMG_LoadTexture(rend, "assets/images/menuContinueButton.png");
+    textures[menuContinueButtonHover] = IMG_LoadTexture(rend, "assets/images/menuContinueButtonHover.png");
+    textures[menuContinueButtonClick] = IMG_LoadTexture(rend, "assets/images/menuContinueButtonClick.png");
+    textures[shifterMachine] = IMG_LoadTexture(rend, "assets/images/shifterMachine.png");
+    //
+    //SDL_SetTextureScaleMode(textures[menuStartButton], SDL_ScaleModeBest);
+}
+
 void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function called once
     printf("starting game loop\n");
     //
@@ -134,6 +161,9 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     //
     std::stack<Machine*> machineStack;
     //
+    SDL_Texture *imageTextures[20];//set to random number right now
+    loadTextures(imageTextures, rend);
+    //
     SDL_Point fieldSize = {20, 15};//field size is in cells, (0,0) represents top left of grid
     SDL_Point camPos = {((fieldSize.x * PX_CELL_SIZE) - SCREEN_WIDTH) >> 1,//(field pixel width - screen pixel width) / 2
                         ((fieldSize.y * PX_CELL_SIZE) - SCREEN_HEIGHT) >> 1}; //position always describes top left corner
@@ -144,25 +174,23 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
 	//
 	SDL_Color lightbrown = hex2sdl("a29587");
 	SDL_Color lightlightbrown = hex2sdl("ada092");
-	SDL_Color brown = hex2sdl("846c5b");
-	SDL_Color black = hex2sdl("332e3c");
     //
-    RendOb *startButton = new Button(2, SCREEN_CELL_HEIGHT / 2 - 5, SCREEN_CELL_WIDTH - 4, 4, SDLColor_LIGHT_PURPLE, SDLColor_RED_PURPLE, black, std::bind(startGame, &gameMode, mouseState));
-    RendOb *resumeButton = new Button(2, SCREEN_CELL_HEIGHT / 2 + 1, SCREEN_CELL_WIDTH - 4, 4, SDLColor_LIGHT_PURPLE, SDLColor_RED_PURPLE, black, [](){});
+    RendOb *startButton = new ButtonStatic(SCREEN_WIDTH / 2 - 250, SCREEN_HEIGHT / 2 - 150, 500, 125, imageTextures[menuStartButton], imageTextures[menuStartButtonHover], imageTextures[menuStartButtonClick], std::bind(startGame, &gameMode, mouseState));
+    RendOb *continueButton = new ButtonStatic(SCREEN_WIDTH / 2 - 250, SCREEN_HEIGHT / 2 + 25, 500, 125, imageTextures[menuContinueButton], imageTextures[menuContinueButtonHover], imageTextures[menuContinueButtonClick], std::bind(startGame, &gameMode, mouseState));
     //Text *startText = new Text("Test", 0, 0, 300, 300, SDL_WHITE);
     menuObjects.push_back(startButton);
-    menuObjects.push_back(resumeButton);
+    menuObjects.push_back(continueButton);
     //menuObjects.push_back(startText);
-	//menuObjects
 	//
     //TTF_Font* font;
     //TTF_Init();
     //
     gameObjects.push_back(new Checkerboard(fieldSize, lightlightbrown, lightbrown));
-    //gameObjects.push_back(new RendOb(10, 10, 2, 5, brown));
-    gameObjects.push_back(new Machine(5, 5, shifter));
-    gameObjects.push_back(new Machine());
-    gameObjects.push_back(new ShopPopup(200, 50, 30));
+    gameObjects.push_back(new Machine(5, 5, shifter, imageTextures[shifterMachine]));
+    //
+    ShopPopup *shop = new ShopPopup(200, 50, 30, std::bind(newMachine, std::placeholders::_1, &gameObjects, mouseState, imageTextures));
+    gameObjects.push_back(shop);
+    shop->addMachineButton(shifter, imageTextures[shifterMachine]);
     //
     int curTick = 0;
     //
@@ -180,7 +208,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
 					menuObjects[i]->updateAction(mouseState);
 				}
 				//
-                render(rend, menuObjects, menuPos, SDLColor_BLACK);
+                render(rend, menuObjects, menuPos, SDLColor_DARK_BLUE);
                 //
                 if(gameMode == 1){
                     printf("last, busy: %d\n", mouseState->busy);
@@ -242,7 +270,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                     SCREEN_CELL_WIDTH = SCREEN_WIDTH / PX_CELL_SIZE;
                 }
                 //
-                render(rend, gameObjects, camPos, gray);
+                render(rend, gameObjects, camPos, SDLColor_DARK_BLUE);
                 curTick++;
                 //
                 break;

@@ -21,6 +21,27 @@ Machine::Machine(int x_pos, int y_pos, machineType type) : RendOb(x_pos, y_pos, 
     }
 }
 
+Machine::Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture) : RendOb(x_pos, y_pos, 2, 2, texture){
+    visited = false;
+    //
+    for(int i = 0; i < MAX_PUTS; i++){
+        inputMachs[i] = nullptr;
+        outputMachs[i] = nullptr;
+        inputMattes[i] = nullptr;
+        outputMattes[i] = nullptr;
+        inputIdxs[i] = 0;
+    }
+    //
+    processTimer = 0;
+    machineSpeed = 128;//starting speed for any machine
+    //
+    this->type = type;
+    //
+    for(int i = 0; i < MAX_CONFIGS; i++){
+        configs[i] = 0;
+    }
+}
+
 void Machine::updateAction(){
     if(processTimer > machineSpeed){
         process();//transform input mattes into output mattes
@@ -36,8 +57,15 @@ void Machine::updateAnim(){
 bool Machine::process(){//default process function
     if(inputMattes[0] == nullptr) return false;//no material to process
     //
-    outputMattes[0] = inputMattes[0];//pass straight through
-    inputMattes[0] = nullptr;//remove from input
+    switch(type){
+        case shifter:
+            //do stuff here
+            //break;
+        default:
+            outputMattes[0] = inputMattes[0];//pass straight through
+            inputMattes[0] = nullptr;//remove from input
+            break;
+    }
     //
     return true;//succesfully processed
 }

@@ -11,7 +11,9 @@ class MouseState;
 class RendOb{
     public:
         RendOb(int, int, int, int, SDL_Color);
-        RendOb();//default constructor
+        RendOb() : RendOb(0,0,0,0,SDLColor_WHITE){}//default constructor
+        RendOb(int, int, int, int, SDL_Texture *texture);//default constructor
+        ~RendOb();
         virtual void render(SDL_Renderer* rend, SDL_Point camPos);//draw the object onto the screen (default is just a rectangle)
         virtual void updateAnim(){}//update animation of object (every tick)
         virtual void updateAction(MouseState*){}//update object state (every four? ticks)
@@ -20,6 +22,8 @@ class RendOb{
         void setPosition(int x, int y);
     protected:
         bool visible;
+        bool usingImage;
+        SDL_Texture *texture;
         SDL_Point position;
         SDL_Point size;
         SDL_Color color;
@@ -49,6 +53,7 @@ class Button : public RendOb{
     public:
         Button() : Button(0,0,5,5,SDLColor_BLACK,{150,150,150,255},SDLColor_CLEAR, nullptr){}
         Button(int, int, int, int, SDL_Color, SDL_Color, SDL_Color, std::function<void()>);
+        Button(int, int, int, int, SDL_Texture*, SDL_Texture*, SDL_Texture*, std::function<void()>);
         //void render(SDL_Renderer* rend, SDL_Point camPos);
         virtual void updateAction(MouseState*);
         void setActivationFunc(std::function<void()> func);
@@ -58,9 +63,23 @@ class Button : public RendOb{
         SDL_Color clickColor;
         std::function<void()> activationFunc;
         bool clicked;
+        //
+        SDL_Texture *defaultTexture;
+        SDL_Texture *hoverTexture;
+        SDL_Texture *clickTexture;
+        //
+        SDL_Point lastCamPos;
 };
 
 class ButtonStatic : public Button{
+    private:
+        void render(SDL_Renderer* rend, SDL_Point camPos);
+    public:
+        using Button::Button;
+        void updateAction(MouseState*);
+};
+
+class ButtonPx : public Button{
     private:
         void render(SDL_Renderer* rend, SDL_Point camPos);
     public:
