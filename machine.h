@@ -33,14 +33,13 @@ class Machine : public RendOb{
         //
         bool visited;
         //
-        bool placing;//whether machine is currently being placed by mouse
+        int placingStage;//stage of being placed by mouse: 0-placed, 1-initial click, 2-first release, 3-second click, 4-second release
+        SDL_Point placingCellPos;
         //
         int processTimer;
         int machineSpeed;
         //
         virtual bool process();
-        void updateAnim();
-        void updateAction();
         //
         Button* selectionButton;//button which can be pressed to bring up machine popup
     public:
@@ -50,6 +49,8 @@ class Machine : public RendOb{
         std::optional<Matte*> getOutput(int outputId = 0);
         void stepThroughMachine(std::stack<Machine*>& machineStack);
         void connectMachine(bool input, int idx, Machine* mach);
+        void render(SDL_Renderer* rend, SDL_Point camPos);
+        void update(MouseState *MouseState);
 };
 
 /*Belt is slightly different because it needs a resizeable array of materials on the belt*/

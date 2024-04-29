@@ -41,6 +41,7 @@ SDL_Color const SDLColor_WHITE = {255,255,255,255};
 SDL_Color const SDLColor_BLACK = {0,0,0,255};
 SDL_Color const SDLColor_CLEAR = {0,0,0,0};
 SDL_Color const SDLColor_LIGHT_GRAY = hex2sdl("dbdbdb");
+SDL_Color const SDLColor_DARK_GRAY = hex2sdl("878787");
 
 //old theme
 SDL_Color const SDLColor_LIGHT_PURPLE = hex2sdl("d8d4f2");//old
@@ -51,6 +52,7 @@ SDL_Color const SDLColor_BROWN = hex2sdl("846c5b");//old
 //new theme
 SDL_Color const SDLColor_DARK_BLUE = hex2sdl("2f4858");
 SDL_Color const SDLColor_BLUE = hex2sdl("33658a");
+SDL_Color const SDLColor_LIGHT_BLUE = hex2sdl("55DDE0");
 SDL_Color const SDLColor_ORANGE = hex2sdl("F6AE2D");
 
 
@@ -58,7 +60,7 @@ class RendOb;
 class MouseState{
     public:
         MouseState();
-        bool busy;//mouse is carrying, dragging, or clicking something
+        int busy;//mouse  is busy with: 0-nothing, 1-carrying, 2-clicking, 3-field moving
         RendOb* carrying;
         int mx; int my;
         int last_mx; int last_my;

@@ -94,8 +94,8 @@ void handleKeys(SDL_Point &camPos, SDL_Point fieldSize, bool &updateVis, MouseSt
     auto state = SDL_GetMouseState(&(mouseState->mx), &(mouseState->my));
     mouseState->mouseDown = (state == 1);
     //
-    if(!mouseState->mouseDown && mouseState->busy){
-        mouseState->busy = false;
+    if(!mouseState->mouseDown && mouseState->busy > 1){
+        mouseState->busy = 0;
     }
 }
 
@@ -119,11 +119,11 @@ void machineClicked(Machine* machine, int speed, int progress){
 
 void newMachine(int type, std::vector<RendOb*> *gameObjects, MouseState *mouseState, SDL_Texture *textures[]){
     printf("making new machine\n");
-    RendOb* newMach = new Machine(mouseState->mx, mouseState->my, (machineType)type, textures[type]);
+    RendOb* newMach = new Machine(mouseState->mx - PX_CELL_SIZE, mouseState->my - PX_CELL_SIZE, (machineType)type, textures[type]);
     //
     gameObjects->push_back(newMach);
     //
-    mouseState->busy = true;
+    mouseState->busy = 1;
     mouseState->carrying = newMach;
 }
 
@@ -136,7 +136,13 @@ void loadTextures(SDL_Texture *textures[], SDL_Renderer* rend){
     textures[menuContinueButton] = IMG_LoadTexture(rend, "assets/images/menuContinueButton.png");
     textures[menuContinueButtonHover] = IMG_LoadTexture(rend, "assets/images/menuContinueButtonHover.png");
     textures[menuContinueButtonClick] = IMG_LoadTexture(rend, "assets/images/menuContinueButtonClick.png");
+    //
     textures[shifterMachine] = IMG_LoadTexture(rend, "assets/images/shifterMachine.png");
+    textures[smelterMachine] = IMG_LoadTexture(rend, "assets/images/smelterMachine.png");
+    textures[sawMachine] = IMG_LoadTexture(rend, "assets/images/sawMachine.png");
+    textures[rotaterMachine] = IMG_LoadTexture(rend, "assets/images/rotaterMachine.png");
+    textures[pressMachine] = IMG_LoadTexture(rend, "assets/images/pressMachine.png");
+    textures[recycleMachine] = IMG_LoadTexture(rend, "assets/images/recycleMachine.png");
     //
     //SDL_SetTextureScaleMode(textures[menuStartButton], SDL_ScaleModeBest);
 }
@@ -169,8 +175,6 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                         ((fieldSize.y * PX_CELL_SIZE) - SCREEN_HEIGHT) >> 1}; //position always describes top left corner
     SDL_Point menuPos = {0,0};
     printf("camPos: %d, %d\n", camPos.x, camPos.y);
-    //
-    SDL_Color gray = hex2sdl("#878787");
 	//
 	SDL_Color lightbrown = hex2sdl("a29587");
 	SDL_Color lightlightbrown = hex2sdl("ada092");
@@ -186,11 +190,11 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     //TTF_Init();
     //
     gameObjects.push_back(new Checkerboard(fieldSize, lightlightbrown, lightbrown));
-    gameObjects.push_back(new Machine(5, 5, shifter, imageTextures[shifterMachine]));
     //
     ShopPopup *shop = new ShopPopup(200, 50, 30, std::bind(newMachine, std::placeholders::_1, &gameObjects, mouseState, imageTextures));
-    gameObjects.push_back(shop);
+    //gameObjects.push_back(shop);
     shop->addMachineButton(shifter, imageTextures[shifterMachine]);
+    //shop->addMachineButton(smelter, imageTextures[smelterMachine]);
     //
     int curTick = 0;
     //
@@ -205,7 +209,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                 handleMouseTitle(mouseState);
                 //
 				for(unsigned int i = 0; i < menuObjects.size(); i++){
-					menuObjects[i]->updateAction(mouseState);
+					menuObjects[i]->update(mouseState);
 				}
 				//
                 render(rend, menuObjects, menuPos, SDLColor_DARK_BLUE);
@@ -219,30 +223,26 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                 bool updateVis = false;
                 handleKeys(camPos, fieldSize, updateVis, mouseState);
                 //
-                if(updateVis){
-                    //printf("camPos: %d, %d\n", camPos.x, camPos.y);
+                if(updateVis){//only update visible on camera move or zoom
                     for(unsigned int i = 0; i < gameObjects.size(); i++){
                         gameObjects[i]->updateVisibilty(camPos);
                     }
                 }
                 //
-                for(unsigned int i = 0; i < gameObjects.size(); i++){
-                    gameObjects[i]->updateAnim();
+                for(unsigned int i = 0; i < gameObjects.size(); i++){//update state for all objects
+                    gameObjects[i]->update(mouseState);
                 }
-                //
-                if(curTick % 4 == 0){
-                    for(unsigned int i = 0; i < gameObjects.size(); i++){
-                        gameObjects[i]->updateAction(mouseState);
-                    }
-                    //
-                    curTick = 0;
-                }
+                shop->update(mouseState);
                 //
                 for(unsigned int i = 0; i < inputMachines.size(); i++){
                     inputMachines[i]->stepThroughMachine(machineStack);
                 }
                 //
-                if(!mouseState->busy && mouseState->mouseDown){
+                if(mouseState->busy == 0 && mouseState->mouseDown){//clicking on field and nothing else
+                    mouseState->busy = 3;
+                }
+                //
+                if(mouseState->busy == 3){//currently moving field
                     camPos.x += mouseState->last_mx - mouseState->mx;
                     camPos.y += mouseState->last_my - mouseState->my;
                     updateVis = true;
@@ -271,7 +271,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                 }
                 //
                 render(rend, gameObjects, camPos, SDLColor_DARK_BLUE);
-                curTick++;
+                shop->render(rend, camPos);//TODO: this doesn't work
                 //
                 break;
         }

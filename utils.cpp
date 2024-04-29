@@ -19,7 +19,7 @@ SDL_Color hex2sdl(std::string input) {
 
     SDL_Color color;
 
-    color.a = (value >> 24) & 0xff;
+    color.a = 255;//(value >> 24) & 0xff;
     color.r = (value >> 16) & 0xff;
     color.g = (value >> 8) & 0xff;
     color.b = (value >> 0) & 0xff;

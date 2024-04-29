@@ -49,6 +49,9 @@ int main(int argc, char* args[]){
         return 0;
     }
     //
+    //allow transparency in renderer
+    SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_BLEND);
+    //
     //Get window surface
     screenSurface = SDL_GetWindowSurface( window );
     //

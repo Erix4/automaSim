@@ -145,7 +145,7 @@ Button::Button(int x_pos, int y_pos, int x_size, int y_size,
     lastCamPos = {0,0};
 }
 
-void Button::updateAction(MouseState* mouseState){
+void Button::update(MouseState* mouseState){
     if(clicked){
         if(!mouseState->mouseDown){//unlicked
             clicked = false;
@@ -171,6 +171,12 @@ void Button::updateAction(MouseState* mouseState){
     color = defaultColor;//button not interacted with
 }
 
+void Button::render(SDL_Renderer* rend, SDL_Point camPos){
+    RendOb::render(rend, camPos);
+    //
+    lastCamPos = camPos;
+}
+
 void Button::setActivationFunc(std::function<void()> func){
     activationFunc = func;
 }
@@ -189,15 +195,15 @@ void ButtonStatic::render(SDL_Renderer* rend, SDL_Point camPos){
     }
     SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
     SDL_RenderFillRect(rend, &curRect);
-    //
-    lastCamPos = camPos;
 }
 
-void ButtonStatic::updateAction(MouseState* mouseState){
+void ButtonStatic::update(MouseState* mouseState){
     if(clicked){
         if(!mouseState->mouseDown){//unclicked
             clicked = false;
-            mouseState->busy = false;
+            if(mouseState->busy == 2){
+                mouseState->busy = 0;
+            }
         }
         return;
     }
@@ -208,7 +214,7 @@ void ButtonStatic::updateAction(MouseState* mouseState){
                     size.y)){//mouse over button
         if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
             clicked = true;
-            mouseState->busy = true;
+            mouseState->busy = 2;
             color = clickColor;
             texture = clickTexture;
             activationFunc();
@@ -228,6 +234,7 @@ void ButtonPx::render(SDL_Renderer* rend, SDL_Point camPos){
                         (position.y - camPos.y),
                         size.x,
                         size.y};
+    lastCamPos = camPos;
     //
     if(usingImage){
         SDL_RenderCopy(rend, texture, NULL, &curRect);
@@ -238,7 +245,7 @@ void ButtonPx::render(SDL_Renderer* rend, SDL_Point camPos){
     SDL_RenderFillRect(rend, &curRect);
 }
 
-void ButtonPx::updateAction(MouseState* mouseState){
+void ButtonPx::update(MouseState* mouseState){
     if(clicked){
         if(!mouseState->mouseDown){//unclicked
             clicked = false;
@@ -251,9 +258,7 @@ void ButtonPx::updateAction(MouseState* mouseState){
                     position.y - lastCamPos.y, 
                     size.x, 
                     size.y)){//mouse over button
-        printf("mouse over\n");
         if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
-            printf("clicked");
             clicked = true;
             mouseState->busy = true;
             color = clickColor;

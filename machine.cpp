@@ -35,6 +35,9 @@ Machine::Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture) :
     processTimer = 0;
     machineSpeed = 128;//starting speed for any machine
     //
+    placingStage = 1;
+    placingCellPos = {0, 0};
+    //
     this->type = type;
     //
     for(int i = 0; i < MAX_CONFIGS; i++){
@@ -42,16 +45,33 @@ Machine::Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture) :
     }
 }
 
-void Machine::updateAction(){
+void Machine::update(MouseState *mouseState){
+    if(placingStage > 0){
+        position.x = mouseState->mx - PX_CELL_SIZE;
+        position.y = mouseState->my - PX_CELL_SIZE;
+        //
+        if(mouseState->mouseUpEvent){
+            if(placingStage == 1){
+                placingStage++;
+                return;
+            }
+            position.x = placingCellPos.x;
+            position.y = placingCellPos.y;
+            placingStage = 0;
+            //
+            return;
+        }else if(placingStage == 2 && mouseState->mouseDown){
+            placingStage++;
+        }
+        //
+        return;
+    }
+    //
     if(processTimer > machineSpeed){
         process();//transform input mattes into output mattes
     }
     //
     visited = false;
-}
-
-void Machine::updateAnim(){
-    //
 }
 
 bool Machine::process(){//default process function
@@ -110,6 +130,38 @@ void Machine::connectMachine(bool input, int idx, Machine* mach){
         inputMachs[idx] = mach;
     }else{
         outputMachs[idx] = mach;
+    }
+}
+
+void Machine::render(SDL_Renderer* rend, SDL_Point camPos){
+    if(placingStage > 0){
+        if(!visible) return;
+        SDL_Rect curRect = {(position.x),
+                            (position.y),
+                            size.x * PX_CELL_SIZE,
+                            size.y * PX_CELL_SIZE};
+        //
+        placingCellPos.x = (position.x + camPos.x + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;
+        placingCellPos.y = (position.y + camPos.y + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;
+        //
+        SDL_Rect highlightRect = {((placingCellPos.x * PX_CELL_SIZE) - camPos.x),
+                                ((placingCellPos.y * PX_CELL_SIZE) - camPos.y),
+                                size.x * PX_CELL_SIZE,
+                                size.y * PX_CELL_SIZE};
+        //
+        //TODO: collision detection for highlight color
+        SDL_SetRenderDrawColor(rend, SDLColor_LIGHT_BLUE.r, SDLColor_LIGHT_BLUE.g, SDLColor_LIGHT_BLUE.b, 100);
+        SDL_RenderFillRect(rend, &highlightRect);
+        //
+        if(usingImage){
+            SDL_RenderCopy(rend, texture, NULL, &curRect);
+            //
+            return;
+        }
+        SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
+        SDL_RenderFillRect(rend, &curRect);
+    }else{
+        RendOb::render(rend, camPos);
     }
 }
 

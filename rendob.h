@@ -15,8 +15,7 @@ class RendOb{
         RendOb(int, int, int, int, SDL_Texture *texture);//default constructor
         ~RendOb();
         virtual void render(SDL_Renderer* rend, SDL_Point camPos);//draw the object onto the screen (default is just a rectangle)
-        virtual void updateAnim(){}//update animation of object (every tick)
-        virtual void updateAction(MouseState*){}//update object state (every four? ticks)
+        virtual void update(MouseState*){}//update object state
         void updateVisibilty(SDL_Point camPos);//update visibility based on camera position
         virtual void gridShift(int x, int y);//cells or rows were added to the grid, so a shift is necessary
         void setPosition(int x, int y);
@@ -55,8 +54,9 @@ class Button : public RendOb{
         Button(int, int, int, int, SDL_Color, SDL_Color, SDL_Color, std::function<void()>);
         Button(int, int, int, int, SDL_Texture*, SDL_Texture*, SDL_Texture*, std::function<void()>);
         //void render(SDL_Renderer* rend, SDL_Point camPos);
-        virtual void updateAction(MouseState*);
+        virtual void update(MouseState*);
         void setActivationFunc(std::function<void()> func);
+        void render(SDL_Renderer* rend, SDL_Point camPos);
     protected:
         SDL_Color defaultColor;
         SDL_Color hoverColor;
@@ -72,19 +72,17 @@ class Button : public RendOb{
 };
 
 class ButtonStatic : public Button{
-    private:
-        void render(SDL_Renderer* rend, SDL_Point camPos);
     public:
         using Button::Button;
-        void updateAction(MouseState*);
+        void update(MouseState*);
+        void render(SDL_Renderer* rend, SDL_Point camPos);
 };
 
 class ButtonPx : public Button{
-    private:
-        void render(SDL_Renderer* rend, SDL_Point camPos);
     public:
         using Button::Button;
-        void updateAction(MouseState*);
+        void update(MouseState*);
+        void render(SDL_Renderer* rend, SDL_Point camPos);
 };
 
 class Checkerboard : public RendOb{

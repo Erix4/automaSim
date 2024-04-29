@@ -13,7 +13,7 @@ class StaticPopup : public RendOb{//abstract class
         StaticPopup() : StaticPopup(0,0,100,80,SDLColor_LIGHT_GRAY){}
         StaticPopup(int x_pos, int y_pos, int x_size, int y_size, SDL_Color color);
         void render(SDL_Renderer* rend, SDL_Point camPos);
-        void updateAction(MouseState*);
+        void update(MouseState*);
         bool getPopupState();
 };
 
@@ -28,7 +28,7 @@ class ShopPopup : public StaticPopup{
         ShopPopup() : ShopPopup(200, 50, 10, nullptr){}
         ShopPopup(int pxHeight, int buttonPxWidth, int buttonPxHeight, std::function<void(int)> newMachineFunc);
         void render(SDL_Renderer* rend, SDL_Point camPos);
-        void updateAction(MouseState*);
+        void update(MouseState*);
         void addMachineButton(int type, SDL_Texture *texture);//enum passed as int
 };
 

@@ -19,9 +19,9 @@ void StaticPopup::render(SDL_Renderer* rend, SDL_Point camPos){
     }
 }
 
-void StaticPopup::updateAction(MouseState *mouseState){
+void StaticPopup::update(MouseState *mouseState){
     for(int i = 0; i <numElements; i++){
-        popupElements[i]->updateAction(mouseState);
+        popupElements[i]->update(mouseState);
     }
 }
 
@@ -69,8 +69,8 @@ void ShopPopup::render(SDL_Renderer* rend, SDL_Point camPos){
     }
 }
 
-void ShopPopup::updateAction(MouseState* mouseState){
-    StaticPopup::updateAction(mouseState);//update all popup elements
+void ShopPopup::update(MouseState *mouseState){
+    StaticPopup::update(mouseState);//update all popup elements
     //
     shopCam.x += mouseState->scrollX;
     //if(s)
