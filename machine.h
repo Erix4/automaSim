@@ -55,6 +55,7 @@ class Machine : public RendOb{
         void update(MouseState *MouseState);
         //
         SDL_Point getPlacingCellPos();
+        int getPlacingStage();
 };
 
 /*Belt is slightly different because it needs a resizeable array of materials on the belt*/

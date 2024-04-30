@@ -17,6 +17,7 @@ class RendOb{
         virtual void render(SDL_Renderer* rend, SDL_Point camPos);//draw the object onto the screen (default is just a rectangle)
         virtual void update(MouseState*){}//update object state
         void updateVisibilty(SDL_Point camPos);//update visibility based on camera position
+        void setVisibility(bool visible);//manually set visibility
         virtual void gridShift(int x, int y);//cells or rows were added to the grid, so a shift is necessary
         void setPosition(int x, int y);
     protected:

@@ -163,6 +163,10 @@ SDL_Point Machine::getPlacingCellPos(){
     return placingCellPos;
 }
 
+int Machine::getPlacingStage(){
+    return placingStage;
+}
+
 Belt::Belt(int x_pos, int y_pos, int x_size, int y_size){
     visited = false;
     //

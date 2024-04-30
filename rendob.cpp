@@ -74,6 +74,10 @@ void RendOb::setPosition(int x, int y){
     position.y = y;
 }
 
+void RendOb::setVisibility(bool visible){
+    this->visible = visible;
+}
+
 RendOb::~RendOb(){
     if(usingImage){
         SDL_DestroyTexture(texture);
@@ -175,7 +179,9 @@ void Button::update(MouseState* mouseState){
     if(clicked){
         if(!mouseState->mouseDown){//unlicked
             clicked = false;
-            mouseState->busy = false;
+            if(mouseState->busy == 2){
+                mouseState->busy = 0;
+            }
         }
         return;
     }
@@ -209,7 +215,7 @@ void Button::update(MouseState* mouseState){
                     pxRect.x, pxRect.y, pxRect.w, pxRect.h)){//mouse over button
         if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
             clicked = true;
-            mouseState->busy = true;
+            mouseState->busy = 2;
             color = clickColor;
             texture = defaultTexture;
             activationFunc();

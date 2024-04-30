@@ -130,6 +130,8 @@ void placeMachine(std::vector<RendOb*> gameObjects[], MouseState *mouseState, Mi
     //
     gameObjects[0].push_back(placedMachine);
     //
+    mouseState->busy = 0;
+    //
     Mix_PlayChannel( -1, placeSound, 0 );
 }
 
@@ -215,6 +217,11 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     Mix_Chunk *placeSound = Mix_LoadWAV("assets/sounds/place.wav");
     //printf("cur volume: %d\n", Mix_VolumeChunk(testChunk, -1));
     //
+    RendOb *highlight = new RendOb(0,0,2,2,SDLColor_LIGHT_BLUE,0);
+    bool newHighlight = false;
+    highlight->setVisibility(false);
+    gameObjects[1].push_back(highlight);
+    //
     ShopPopup *shop = new ShopPopup(200, 50, 30, std::bind(newMachine, std::placeholders::_1, gameObjects, mouseState, imageTextures, pickupSound, placeSound));
     gameObjects[1].push_back(shop);
     shop->addMachineButton(shifter, imageTextures[shifterMachine]);
@@ -272,12 +279,23 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                     mouseState->busy = 3;
                 }
                 //
+                if(mouseState->busy == 0 && newHighlight){
+                    newHighlight = false;
+                    highlight->setVisibility(false);
+                }
+                //
                 if(mouseState->busy == 3){//currently moving field
                     camPos.x += mouseState->last_mx - mouseState->mx;
                     camPos.y += mouseState->last_my - mouseState->my;
                     updateVis = true;
                 }else if(mouseState->busy == 1){//currently carrying machine
-                    //
+                    if(newHighlight){
+                        highlight->setVisibility(true);
+                        SDL_Point carryingPos = ((Machine*)mouseState->carrying)->getPlacingCellPos();//look out for seg faults!
+                        highlight->setPosition(carryingPos.x, carryingPos.y);
+                    }else{
+                        newHighlight = true;
+                    }
                 }
                 //
                 if(mouseState->pinchDist != 0){//this could be made smoother
@@ -302,7 +320,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                     SCREEN_CELL_WIDTH = SCREEN_WIDTH / PX_CELL_SIZE;
                 }
                 //
-                render(rend, gameObjects, camPos, SDLColor_DARK_BLUE);//TODO: highlights don't fit into layer thing
+                render(rend, gameObjects, camPos, SDLColor_DARK_BLUE);
                 //
                 break;
         }
