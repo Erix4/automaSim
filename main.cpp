@@ -29,8 +29,21 @@ int main(int argc, char* args[]){
     //Initialize SDL
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ){
         printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
-        return 0;
+        return 1;
     }
+    //
+    //Init sound
+    if(SDL_Init(SDL_INIT_AUDIO) < 0){
+        printf("Sound can not initilize! Error: %s\n", SDL_GetError());
+        return 1;
+    }
+    //
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) < 0) {
+        printf("Audio didn't open! Error: %s\n", Mix_GetError());
+        return 1;
+    }
+    // Amount of channels (Max amount of sounds playing at the same time)
+    Mix_AllocateChannels(8);
     //
     //Create window
     window = SDL_CreateWindow( "Automa Sim", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);

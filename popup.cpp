@@ -1,11 +1,11 @@
 #include "popup.h"
 
-StaticPopup::StaticPopup(int x_pos, int y_pos, int x_size, int y_size, SDL_Color color) : RendOb(x_pos, y_pos, x_size, y_size, color){
+Popup::Popup(int x_pos, int y_pos, int x_size, int y_size, SDL_Color color, int renderType) : RendOb(x_pos, y_pos, x_size, y_size, color, renderType){
     popupState = false;
     numElements = 0;
 }
 
-void StaticPopup::render(SDL_Renderer* rend, SDL_Point camPos){
+void Popup::render(SDL_Renderer* rend, SDL_Point camPos){
     if(!visible) return;
     SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
     SDL_Rect curRect = {(position.x),
@@ -19,13 +19,13 @@ void StaticPopup::render(SDL_Renderer* rend, SDL_Point camPos){
     }
 }
 
-void StaticPopup::update(MouseState *mouseState){
+void Popup::update(MouseState *mouseState){
     for(int i = 0; i <numElements; i++){
         popupElements[i]->update(mouseState);
     }
 }
 
-bool StaticPopup::getPopupState(){
+bool Popup::getPopupState(){
     return popupState;
 }
 
@@ -52,9 +52,9 @@ ShopPopup::ShopPopup(int pxHeight, int buttonPxWidth, int buttonPxHeight, std::f
     //
     color = SDLColor_ORANGE;
     //
-    ButtonStatic *collapseButton = new ButtonStatic(0, SCREEN_HEIGHT - buttonPxHeight - pxHeight,
+    Button *collapseButton = new Button(0, SCREEN_HEIGHT - buttonPxHeight - pxHeight,
                                         buttonPxWidth, buttonPxHeight,
-                                        SDLColor_LIGHT_PURPLE, SDLColor_RED_PURPLE, SDLColor_BLACK, nullptr);
+                                        SDLColor_LIGHT_PURPLE, SDLColor_RED_PURPLE, SDLColor_BLACK, 2, nullptr);
     collapseButton->setActivationFunc(std::bind(toggleCollapse, &popupState, buttonPxHeight, pxHeight, collapseButton));
     //
     popupElements[0] = collapseButton;
@@ -63,14 +63,14 @@ ShopPopup::ShopPopup(int pxHeight, int buttonPxWidth, int buttonPxHeight, std::f
 
 void ShopPopup::render(SDL_Renderer* rend, SDL_Point camPos){
     if(popupState){
-        StaticPopup::render(rend, shopCam);
+        Popup::render(rend, shopCam);
     }else{
         popupElements[0]->render(rend, shopCam);
     }
 }
 
 void ShopPopup::update(MouseState *mouseState){
-    StaticPopup::update(mouseState);//update all popup elements
+    Popup::update(mouseState);//update all popup elements
     //
     shopCam.x += mouseState->scrollX;
     //if(s)
@@ -78,7 +78,7 @@ void ShopPopup::update(MouseState *mouseState){
 
 void ShopPopup::addMachineButton(int type, SDL_Texture *texture){
     std::function<void()> curMachineFunc = std::bind(newMachineFunc, type);
-    RendOb *newMachine = new ButtonPx(0, 0, size.y / 2, size.y / 2, texture, texture, texture, curMachineFunc);
+    RendOb *newMachine = new Button((numElements - 1) * size.y * 3/4, 0, size.y / 2, size.y / 2, texture, texture, texture, 1, curMachineFunc);
     //
     popupElements[numElements] = newMachine;
     numElements++;

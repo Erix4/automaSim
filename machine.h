@@ -29,7 +29,7 @@ class Machine : public RendOb{
         machineType type;
         //std::function<void((std::vector<Matte*>)&, (std::vector<Matte*>)&)> process;
         std::function<void(Matte*)> wasteMatte;
-        std::function<void(Machine*)> machineClicked;//opens machine popup
+        std::function<void(Machine*)> machinePlaced;//machine placed
         //
         bool visited;
         //
@@ -45,12 +45,16 @@ class Machine : public RendOb{
     public:
         Machine() : Machine(0, 0, shifter){}//default values for machine
         Machine(int x_pos, int y_pos, machineType type);//machine with no texture
-        Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture);//machine with texture
+        Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture, std::function<void(Machine*)> machinePlaced);//machine with texture
+        //
         std::optional<Matte*> getOutput(int outputId = 0);
         void stepThroughMachine(std::stack<Machine*>& machineStack);
         void connectMachine(bool input, int idx, Machine* mach);
+        //
         void render(SDL_Renderer* rend, SDL_Point camPos);
         void update(MouseState *MouseState);
+        //
+        SDL_Point getPlacingCellPos();
 };
 
 /*Belt is slightly different because it needs a resizeable array of materials on the belt*/

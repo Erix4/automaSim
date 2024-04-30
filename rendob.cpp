@@ -1,20 +1,24 @@
 #include "rendob.h"
 
-RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Color color){
+RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Color color, int renderType){
     position = {x_pos, y_pos};//default starting position
     size = {x_size, y_size};
     //
     visible = true;//currently in view of camera
+    //
+    this->renderType = renderType;
     //
     this->color = color;
     usingImage = false;
 }
 
-RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Texture *texture){
+RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Texture *texture, int renderType){
     position = {x_pos, y_pos};//default starting position
     size = {x_size, y_size};
     //
     visible = true;//currently in view of camera
+    //
+    this->renderType = renderType;
     //
     this->texture = texture;
     usingImage = true;
@@ -22,10 +26,27 @@ RendOb::RendOb(int x_pos, int y_pos, int x_size, int y_size, SDL_Texture *textur
 
 void RendOb::render(SDL_Renderer* rend, SDL_Point camPos){
     if(!visible) return;
-    SDL_Rect curRect = {((position.x * PX_CELL_SIZE) - camPos.x),
+    SDL_Rect curRect;
+    switch(renderType){
+        case 0://cell & cam
+            curRect = {((position.x * PX_CELL_SIZE) - camPos.x),
                         ((position.y * PX_CELL_SIZE) - camPos.y),
                         size.x * PX_CELL_SIZE,
                         size.y * PX_CELL_SIZE};
+            break;
+        case 1://px & cam
+            curRect = {((position.x) - camPos.x),
+                        ((position.y) - camPos.y),
+                        size.x,
+                        size.y};
+            break;
+        default://case 2, px
+            curRect = {(position.x),
+                        (position.y),
+                        size.x,
+                        size.y};
+            break;
+    }
     if(usingImage){
         SDL_RenderCopy(rend, texture, NULL, &curRect);
         //
@@ -107,13 +128,15 @@ void Text::setFontSize(int fontSize){
 Button::Button(int x_pos = 0, int y_pos = 0, int x_size = 5, int y_size = 5,
                 SDL_Color defaultColor = {255,255,255,255},
                 SDL_Color hoverColor = {150,150,150,255},
-                SDL_Color clickColor = {0,0,0,255},
+                SDL_Color clickColor = {0,0,0,255},int renderType=0,
                 std::function<void()> actFunc = [](){}){//default constructor
     position = {x_pos, y_pos};
     size = {x_size, y_size};
     //
     visible = true;//currently in view of camera
     activationFunc = actFunc;//function called when button pressed
+    //
+    this->renderType = renderType;
     //
     this->color = defaultColor;
     this->defaultColor = defaultColor;
@@ -128,12 +151,15 @@ Button::Button(int x_pos, int y_pos, int x_size, int y_size,
                 SDL_Texture *defaultTexture,
                 SDL_Texture *hoverTexture,
                 SDL_Texture *clickTexture,
+                int renderType,
                 std::function<void()> actFunc = [](){}){//default constructor
     position = {x_pos, y_pos};
     size = {x_size, y_size};
     //
     visible = true;//currently in view of camera
     activationFunc = actFunc;//function called when button pressed
+    //
+    this->renderType = renderType;
     //
     this->color = defaultColor;
     this->texture = defaultTexture;
@@ -153,22 +179,48 @@ void Button::update(MouseState* mouseState){
         }
         return;
     }
+    //
+    SDL_Rect pxRect;
+    switch(renderType){
+        case 0://cell & cam
+            pxRect = {position.x * PX_CELL_SIZE - lastCamPos.x,
+                        position.y * PX_CELL_SIZE - lastCamPos.y,
+                        size.x * PX_CELL_SIZE,
+                        size.y * PX_CELL_SIZE};
+            //
+            break;
+        case 1://px & cam
+            pxRect = {position.x - lastCamPos.x,
+                        position.y - lastCamPos.y,
+                        size.x,
+                        size.y};
+            //
+            break;
+        default://px no cam
+            pxRect = {position.x,
+                        position.y,
+                        size.x,
+                        size.y};
+            //
+            break;
+    }
+    //
     if(collisionDet(mouseState->mx, mouseState->my, 0, 0, 
-                    position.x * PX_CELL_SIZE - lastCamPos.x, 
-                    position.y * PX_CELL_SIZE - lastCamPos.y, 
-                    size.x * PX_CELL_SIZE, 
-                    size.y * PX_CELL_SIZE)){//mouse over button
+                    pxRect.x, pxRect.y, pxRect.w, pxRect.h)){//mouse over button
         if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
             clicked = true;
             mouseState->busy = true;
             color = clickColor;
+            texture = defaultTexture;
             activationFunc();
             return;
         }
         color = hoverColor;//not clicked
+        texture = hoverTexture;
         return;
     }
     color = defaultColor;//button not interacted with
+    texture = defaultTexture;
 }
 
 void Button::render(SDL_Renderer* rend, SDL_Point camPos){
@@ -181,7 +233,7 @@ void Button::setActivationFunc(std::function<void()> func){
     activationFunc = func;
 }
 
-void ButtonStatic::render(SDL_Renderer* rend, SDL_Point camPos){
+/*void ButtonStatic::render(SDL_Renderer* rend, SDL_Point camPos){
     if(!visible) return;
     SDL_Rect curRect = {(position.x),
                         (position.y),
@@ -272,7 +324,7 @@ void ButtonPx::update(MouseState* mouseState){
     }
     color = defaultColor;//button not interacted with
     texture = defaultTexture;
-}
+}*/
 
 Checkerboard::Checkerboard(SDL_Point fieldSize, SDL_Color color1, SDL_Color color2){
     position = {0, 0};//default starting position

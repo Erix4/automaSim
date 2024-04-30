@@ -1,6 +1,6 @@
 #include "machine.h"
 
-Machine::Machine(int x_pos, int y_pos, machineType type) : RendOb(x_pos, y_pos, 2, 2, SDLColor_WHITE){
+Machine::Machine(int x_pos, int y_pos, machineType type) : RendOb(x_pos, y_pos, 2, 2, SDLColor_WHITE, 0){
     visited = false;
     //
     for(int i = 0; i < MAX_PUTS; i++){
@@ -21,7 +21,7 @@ Machine::Machine(int x_pos, int y_pos, machineType type) : RendOb(x_pos, y_pos, 
     }
 }
 
-Machine::Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture) : RendOb(x_pos, y_pos, 2, 2, texture){
+Machine::Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture, std::function<void(Machine*)> machinePlaced) : RendOb(x_pos, y_pos, 2 * PX_CELL_SIZE, 2 * PX_CELL_SIZE, texture, 2){
     visited = false;
     //
     for(int i = 0; i < MAX_PUTS; i++){
@@ -37,6 +37,8 @@ Machine::Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture) :
     //
     placingStage = 1;
     placingCellPos = {0, 0};
+    //
+    this->machinePlaced = machinePlaced;
     //
     this->type = type;
     //
@@ -57,7 +59,14 @@ void Machine::update(MouseState *mouseState){
             }
             position.x = placingCellPos.x;
             position.y = placingCellPos.y;
+            //
+            size.x = 2;//switch to cell sizing
+            size.y = 2;
+            //
+            renderType = 0;
             placingStage = 0;
+            //
+            machinePlaced(this);//call game function to move layer
             //
             return;
         }else if(placingStage == 2 && mouseState->mouseDown){
@@ -135,34 +144,23 @@ void Machine::connectMachine(bool input, int idx, Machine* mach){
 
 void Machine::render(SDL_Renderer* rend, SDL_Point camPos){
     if(placingStage > 0){
-        if(!visible) return;
-        SDL_Rect curRect = {(position.x),
-                            (position.y),
-                            size.x * PX_CELL_SIZE,
-                            size.y * PX_CELL_SIZE};
-        //
         placingCellPos.x = (position.x + camPos.x + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;
         placingCellPos.y = (position.y + camPos.y + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;
         //
-        SDL_Rect highlightRect = {((placingCellPos.x * PX_CELL_SIZE) - camPos.x),
+        /*SDL_Rect highlightRect = {((placingCellPos.x * PX_CELL_SIZE) - camPos.x),
                                 ((placingCellPos.y * PX_CELL_SIZE) - camPos.y),
                                 size.x * PX_CELL_SIZE,
                                 size.y * PX_CELL_SIZE};
         //
         //TODO: collision detection for highlight color
         SDL_SetRenderDrawColor(rend, SDLColor_LIGHT_BLUE.r, SDLColor_LIGHT_BLUE.g, SDLColor_LIGHT_BLUE.b, 100);
-        SDL_RenderFillRect(rend, &highlightRect);
-        //
-        if(usingImage){
-            SDL_RenderCopy(rend, texture, NULL, &curRect);
-            //
-            return;
-        }
-        SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
-        SDL_RenderFillRect(rend, &curRect);
-    }else{
-        RendOb::render(rend, camPos);
+        SDL_RenderFillRect(rend, &highlightRect);*/
     }
+    RendOb::render(rend, camPos);
+}
+
+SDL_Point Machine::getPlacingCellPos(){
+    return placingCellPos;
 }
 
 Belt::Belt(int x_pos, int y_pos, int x_size, int y_size){

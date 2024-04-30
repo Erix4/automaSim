@@ -10,9 +10,9 @@ extern int SCREEN_CELL_HEIGHT;
 class MouseState;
 class RendOb{
     public:
-        RendOb(int, int, int, int, SDL_Color);
-        RendOb() : RendOb(0,0,0,0,SDLColor_WHITE){}//default constructor
-        RendOb(int, int, int, int, SDL_Texture *texture);//default constructor
+        RendOb(int, int, int, int, SDL_Color,int renderType);
+        RendOb() : RendOb(0,0,0,0,SDLColor_WHITE,0){}//default constructor
+        RendOb(int, int, int, int, SDL_Texture *texture, int renderType);
         ~RendOb();
         virtual void render(SDL_Renderer* rend, SDL_Point camPos);//draw the object onto the screen (default is just a rectangle)
         virtual void update(MouseState*){}//update object state
@@ -22,6 +22,8 @@ class RendOb{
     protected:
         bool visible;
         bool usingImage;
+        int renderType;//0-cell w/ cam, 1-px w/ cam, 2-px no cam
+        //
         SDL_Texture *texture;
         SDL_Point position;
         SDL_Point size;
@@ -50,9 +52,9 @@ class Text : public RendOb{
 
 class Button : public RendOb{
     public:
-        Button() : Button(0,0,5,5,SDLColor_BLACK,{150,150,150,255},SDLColor_CLEAR, nullptr){}
-        Button(int, int, int, int, SDL_Color, SDL_Color, SDL_Color, std::function<void()>);
-        Button(int, int, int, int, SDL_Texture*, SDL_Texture*, SDL_Texture*, std::function<void()>);
+        Button() : Button(0,0,5,5,SDLColor_BLACK,{150,150,150,255},SDLColor_CLEAR, 2, nullptr){}
+        Button(int, int, int, int, SDL_Color, SDL_Color, SDL_Color, int renderType, std::function<void()>);
+        Button(int, int, int, int, SDL_Texture*, SDL_Texture*, SDL_Texture*, int renderType, std::function<void()>);
         //void render(SDL_Renderer* rend, SDL_Point camPos);
         virtual void update(MouseState*);
         void setActivationFunc(std::function<void()> func);
@@ -71,7 +73,7 @@ class Button : public RendOb{
         SDL_Point lastCamPos;
 };
 
-class ButtonStatic : public Button{
+/*class ButtonStatic : public Button{
     public:
         using Button::Button;
         void update(MouseState*);
@@ -83,7 +85,7 @@ class ButtonPx : public Button{
         using Button::Button;
         void update(MouseState*);
         void render(SDL_Renderer* rend, SDL_Point camPos);
-};
+};*/
 
 class Checkerboard : public RendOb{
     public:

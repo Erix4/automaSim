@@ -9,13 +9,15 @@ int PX_CELL_SIZE;
 int SCREEN_CELL_WIDTH;
 int SCREEN_CELL_HEIGHT;
 
-void render(SDL_Renderer* rend, std::vector<RendOb*> objs, SDL_Point camPos, SDL_Color bkgColor){
+void render(SDL_Renderer* rend, std::vector<RendOb*> objs[], SDL_Point camPos, SDL_Color bkgColor){
     SDL_SetRenderDrawColor(rend, bkgColor.r, bkgColor.g, bkgColor.b, 255);//clear screen(backbuffer)
     SDL_RenderClear(rend);
     //
-    for(unsigned int i = 0; i < objs.size(); i++){
+    for(int j = 0; j < LAYER_NUM; j++){
+        for(int i = 0; i < objs[j].size(); i++){
         //printf("rendering %d\n", i);
-        objs[i]->render(rend, camPos);
+        objs[j][i]->render(rend, camPos);
+    }
     }
     //
     SDL_RenderPresent(rend);//load backbuffer onto screen
@@ -50,7 +52,7 @@ int handleEvents(SDL_Event e, MouseState* mouseState){
             case SDL_MOUSEWHEEL:
                 mouseState->pinchDist = (float)e.wheel.y / 100;
                 //
-                mouseState->scrollX = e.wheel.x;
+                mouseState->scrollX = e.wheel.x * 5;
                 //
                 break;
             case SDL_MULTIGESTURE:
@@ -111,21 +113,38 @@ bool handleMouseTitle(MouseState* mouseState){
 
 void startGame(short unsigned int* gameMode, MouseState* mouseState){
     *gameMode = 1;
+    mouseState->busy = 0;
 }
 
 void machineClicked(Machine* machine, int speed, int progress){
     //
 }
 
-void newMachine(int type, std::vector<RendOb*> *gameObjects, MouseState *mouseState, SDL_Texture *textures[]){
-    printf("making new machine\n");
-    RendOb* newMach = new Machine(mouseState->mx - PX_CELL_SIZE, mouseState->my - PX_CELL_SIZE, (machineType)type, textures[type]);
+void placeMachine(std::vector<RendOb*> gameObjects[], MouseState *mouseState, Mix_Chunk *placeSound, Machine *placedMachine){
+    for(int i = 0; i < gameObjects[2].size(); i++){
+        if(gameObjects[2][i] == (RendOb*)placedMachine){
+            gameObjects[2].erase(gameObjects[2].begin() + i);//remove ith item from 2nd layer of gameobjects
+            break;
+        }
+    }
     //
-    gameObjects->push_back(newMach);
+    gameObjects[0].push_back(placedMachine);
+    //
+    Mix_PlayChannel( -1, placeSound, 0 );
+}
+
+void newMachine(int type, std::vector<RendOb*> gameObjects[], MouseState *mouseState, SDL_Texture *textures[], Mix_Chunk *pickupSound, Mix_Chunk *placeSound){
+    printf("making new machine\n");
+    RendOb* newMach = new Machine(mouseState->mx - PX_CELL_SIZE, mouseState->my - PX_CELL_SIZE, (machineType)type, textures[type], std::bind(placeMachine, gameObjects, mouseState, placeSound, std::placeholders::_1));
+    //
+    Mix_PlayChannel( -1, pickupSound, 0 );
+    //
+    gameObjects[2].push_back(newMach);
     //
     mouseState->busy = 1;
     mouseState->carrying = newMach;
 }
+
 
 void loadTextures(SDL_Texture *textures[], SDL_Renderer* rend){
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
@@ -161,8 +180,8 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
     //
     MouseState *mouseState = new MouseState();
     //
-    std::vector<RendOb*> menuObjects;
-    std::vector<RendOb*> gameObjects;
+    std::vector<RendOb*> menuObjects[LAYER_NUM];
+    std::vector<RendOb*> gameObjects[LAYER_NUM];
     std::vector<Machine*> inputMachines;
     //
     std::stack<Machine*> machineStack;
@@ -179,22 +198,30 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
 	SDL_Color lightbrown = hex2sdl("a29587");
 	SDL_Color lightlightbrown = hex2sdl("ada092");
     //
-    RendOb *startButton = new ButtonStatic(SCREEN_WIDTH / 2 - 250, SCREEN_HEIGHT / 2 - 150, 500, 125, imageTextures[menuStartButton], imageTextures[menuStartButtonHover], imageTextures[menuStartButtonClick], std::bind(startGame, &gameMode, mouseState));
-    RendOb *continueButton = new ButtonStatic(SCREEN_WIDTH / 2 - 250, SCREEN_HEIGHT / 2 + 25, 500, 125, imageTextures[menuContinueButton], imageTextures[menuContinueButtonHover], imageTextures[menuContinueButtonClick], std::bind(startGame, &gameMode, mouseState));
+    RendOb *startButton = new Button(SCREEN_WIDTH / 2 - 250, SCREEN_HEIGHT / 2 - 150, 500, 125, imageTextures[menuStartButton], imageTextures[menuStartButtonHover], imageTextures[menuStartButtonClick], 2, std::bind(startGame, &gameMode, mouseState));
+    RendOb *continueButton = new Button(SCREEN_WIDTH / 2 - 250, SCREEN_HEIGHT / 2 + 25, 500, 125, imageTextures[menuContinueButton], imageTextures[menuContinueButtonHover], imageTextures[menuContinueButtonClick], 2, std::bind(startGame, &gameMode, mouseState));
     //Text *startText = new Text("Test", 0, 0, 300, 300, SDL_WHITE);
-    menuObjects.push_back(startButton);
-    menuObjects.push_back(continueButton);
+    menuObjects[0].push_back(startButton);
+    menuObjects[0].push_back(continueButton);
     //menuObjects.push_back(startText);
 	//
     //TTF_Font* font;
     //TTF_Init();
     //
-    gameObjects.push_back(new Checkerboard(fieldSize, lightlightbrown, lightbrown));
+    gameObjects[0].push_back(new Checkerboard(fieldSize, lightlightbrown, lightbrown));
     //
-    ShopPopup *shop = new ShopPopup(200, 50, 30, std::bind(newMachine, std::placeholders::_1, &gameObjects, mouseState, imageTextures));
-    //gameObjects.push_back(shop);
+    //
+    Mix_Chunk *pickupSound = Mix_LoadWAV("assets/sounds/pickUp.wav");
+    Mix_Chunk *placeSound = Mix_LoadWAV("assets/sounds/place.wav");
+    //printf("cur volume: %d\n", Mix_VolumeChunk(testChunk, -1));
+    //
+    ShopPopup *shop = new ShopPopup(200, 50, 30, std::bind(newMachine, std::placeholders::_1, gameObjects, mouseState, imageTextures, pickupSound, placeSound));
+    gameObjects[1].push_back(shop);
     shop->addMachineButton(shifter, imageTextures[shifterMachine]);
-    //shop->addMachineButton(smelter, imageTextures[smelterMachine]);
+    shop->addMachineButton(smelter, imageTextures[smelterMachine]);
+    shop->addMachineButton(saw, imageTextures[sawMachine]);
+    shop->addMachineButton(rotater, imageTextures[rotaterMachine]);
+    shop->addMachineButton(press, imageTextures[pressMachine]);
     //
     int curTick = 0;
     //
@@ -208,8 +235,8 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
             case 0://title screen
                 handleMouseTitle(mouseState);
                 //
-				for(unsigned int i = 0; i < menuObjects.size(); i++){
-					menuObjects[i]->update(mouseState);
+				for(unsigned int i = 0; i < menuObjects[0].size(); i++){
+					menuObjects[0][i]->update(mouseState);
 				}
 				//
                 render(rend, menuObjects, menuPos, SDLColor_DARK_BLUE);
@@ -224,17 +251,20 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                 handleKeys(camPos, fieldSize, updateVis, mouseState);
                 //
                 if(updateVis){//only update visible on camera move or zoom
-                    for(unsigned int i = 0; i < gameObjects.size(); i++){
-                        gameObjects[i]->updateVisibilty(camPos);
+                    for(int j = 0; j < LAYER_NUM; j++){
+                        for(int i = 0; i < gameObjects[j].size(); i++){
+                            gameObjects[j][i]->updateVisibilty(camPos);
+                        }
                     }
                 }
                 //
-                for(unsigned int i = 0; i < gameObjects.size(); i++){//update state for all objects
-                    gameObjects[i]->update(mouseState);
+                for(int j = 0; j < LAYER_NUM; j++){
+                    for(int i = 0; i < gameObjects[j].size(); i++){
+                        gameObjects[j][i]->update(mouseState);//update state for all objects
+                    }
                 }
-                shop->update(mouseState);
                 //
-                for(unsigned int i = 0; i < inputMachines.size(); i++){
+                for(int i = 0; i < inputMachines.size(); i++){
                     inputMachines[i]->stepThroughMachine(machineStack);
                 }
                 //
@@ -246,6 +276,8 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                     camPos.x += mouseState->last_mx - mouseState->mx;
                     camPos.y += mouseState->last_my - mouseState->my;
                     updateVis = true;
+                }else if(mouseState->busy == 1){//currently carrying machine
+                    //
                 }
                 //
                 if(mouseState->pinchDist != 0){//this could be made smoother
@@ -270,8 +302,7 @@ void gameLoop(SDL_Renderer* rend, int screenWidth, int screenHeight){//function 
                     SCREEN_CELL_WIDTH = SCREEN_WIDTH / PX_CELL_SIZE;
                 }
                 //
-                render(rend, gameObjects, camPos, SDLColor_DARK_BLUE);
-                shop->render(rend, camPos);//TODO: this doesn't work
+                render(rend, gameObjects, camPos, SDLColor_DARK_BLUE);//TODO: highlights don't fit into layer thing
                 //
                 break;
         }

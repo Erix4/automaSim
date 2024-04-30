@@ -13,6 +13,7 @@
 #include "SDL2/SDL.h"
 #include "SDL2a/SDL_ttf.h"
 #include "SDL2/SDL_image.h"
+#include "SDL2/SDL_mixer.h"
 
 //Screen dimension constants
 int const SCREEN_WIDTH = 750;//640;
@@ -33,6 +34,8 @@ int const MATTE_SIZE = 4;
 int const MATTE_AREA = MATTE_SIZE * MATTE_SIZE;
 
 int const MAX_ELEMENTS = 20;//max number of elements in a popup
+
+int const LAYER_NUM = 3;//number of layers
 
 SDL_Color hex2sdl(std::string input);
 
