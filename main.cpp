@@ -84,7 +84,8 @@ int main(int argc, char* args[]){
     //
     printf("calling game loop\n");
     //
-    gameLoop(rend, SCREEN_WIDTH, SCREEN_HEIGHT);
+    Game *game = new Game(rend);
+    game->gameLoop();
     //
     //Destroy window
     SDL_DestroyWindow( window );

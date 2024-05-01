@@ -84,6 +84,14 @@ RendOb::~RendOb(){
     }
 }
 
+SDL_Point RendOb::getPosition(){
+    return position;
+}
+
+void RendOb::setColor(SDL_Color color){
+    this->color = color;
+}
+
 Text::Text(){//default constructor
     this->text = "Incomplete";
     //

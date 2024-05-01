@@ -55,9 +55,12 @@ SDL_Color const SDLColor_BROWN = hex2sdl("846c5b");//old
 //new theme
 SDL_Color const SDLColor_DARK_BLUE = hex2sdl("2f4858");
 SDL_Color const SDLColor_BLUE = hex2sdl("33658a");
-SDL_Color const SDLColor_LIGHT_BLUE = {85, 221, 224, 100};//hex2sdl("55DDE0");
 SDL_Color const SDLColor_ORANGE = hex2sdl("F6AE2D");
 
+//highlights
+SDL_Color const SDLColor_CLEAR_BLUE = {85, 221, 224, 100};
+SDL_Color const SDLColor_CLEAR_RED = {232, 37, 37, 100};
+SDL_Color const SDLColor_CLEAR_GREEN = {40, 186, 0, 100};
 
 class RendOb;
 class MouseState{

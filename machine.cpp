@@ -57,8 +57,6 @@ void Machine::update(MouseState *mouseState){
                 placingStage++;
                 return;
             }
-            position.x = placingCellPos.x;
-            position.y = placingCellPos.y;
             //
             size.x = 2;//switch to cell sizing
             size.y = 2;

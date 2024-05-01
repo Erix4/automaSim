@@ -20,6 +20,8 @@ class RendOb{
         void setVisibility(bool visible);//manually set visibility
         virtual void gridShift(int x, int y);//cells or rows were added to the grid, so a shift is necessary
         void setPosition(int x, int y);
+        SDL_Point getPosition();
+        void setColor(SDL_Color color);
     protected:
         bool visible;
         bool usingImage;
