@@ -78,7 +78,7 @@ int Game::handleEvents(){
             case SDL_MOUSEWHEEL:
                 mouseState->pinchDist = (float)e.wheel.y / 100;
                 //
-                mouseState->scrollX = e.wheel.x * 5;
+                mouseState->scrollX = e.wheel.x * 10;
                 //
                 break;
             case SDL_MULTIGESTURE:
@@ -176,7 +176,13 @@ void Game::placeMachine(std::vector<RendOb*> gameObjects[], Machine *placedMachi
 
 void Game::newMachine(int type, std::vector<RendOb*> gameObjects[]){
     printf("making new machine\n");
-    RendOb* newMach = new Machine(mouseState->mx - PX_CELL_SIZE, mouseState->my - PX_CELL_SIZE, (machineType)type, imageTextures[type], std::bind(&Game::placeMachine, this, gameObjects, std::placeholders::_1));
+    //
+    RendOb* newMach;
+    if(type == belt){
+        newMach = new Belt(mouseState->mx - PX_CELL_SIZE, mouseState->my - PX_CELL_SIZE, imageTextures[type], std::bind(&Game::placeMachine, this, gameObjects, std::placeholders::_1));
+    }else{
+        newMach = new Machine(mouseState->mx - PX_CELL_SIZE, mouseState->my - PX_CELL_SIZE, (machineType)type, imageTextures[type], std::bind(&Game::placeMachine, this, gameObjects, std::placeholders::_1));
+    }
     //
     Mix_PlayChannel( -1, pickupSound, 0 );
     //
@@ -202,6 +208,7 @@ void Game::loadTextures(){
     imageTextures[rotaterMachine] = IMG_LoadTexture(rend, "assets/images/rotaterMachine.png");
     imageTextures[pressMachine] = IMG_LoadTexture(rend, "assets/images/pressMachine.png");
     imageTextures[recycleMachine] = IMG_LoadTexture(rend, "assets/images/recycleMachine.png");
+    imageTextures[beltShopMachine] = IMG_LoadTexture(rend, "assets/images/beltShopMachine.png");
     //
     //SDL_SetTextureScaleMode(textures[menuStartButton], SDL_ScaleModeBest);
 }
@@ -295,6 +302,7 @@ void Game::gameLoop(){//function called once
     //
     ShopPopup *shop = new ShopPopup(200, 50, 30, std::bind(&Game::newMachine, this, std::placeholders::_1, gameObjects));
     gameObjects[1].push_back(shop);
+    shop->addMachineButton(belt, imageTextures[beltShopMachine]);
     shop->addMachineButton(shifter, imageTextures[shifterMachine]);
     shop->addMachineButton(smelter, imageTextures[smelterMachine]);
     shop->addMachineButton(saw, imageTextures[sawMachine]);

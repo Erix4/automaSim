@@ -3,7 +3,7 @@
 
 #include "machine.h" //game -> machine -> popup -> matte -> rendob -> utils
 
-enum textureTypes{shifterMachine, smelterMachine, sawMachine, rotaterMachine, pressMachine, recycleMachine,
+enum textureTypes{shifterMachine, smelterMachine, sawMachine, rotaterMachine, pressMachine, recycleMachine, beltShopMachine,
                 menuStartButton, menuStartButtonHover, menuStartButtonClick,
                 menuContinueButton, menuContinueButtonHover, menuContinueButtonClick,
 };

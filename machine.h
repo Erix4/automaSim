@@ -5,7 +5,7 @@
 //#include "rendob.h"
 //#include "utils.h"
 
-enum machineType {shifter, smelter, saw, rotater, press, recycle};
+enum machineType {shifter, smelter, saw, rotater, press, recycle, belt};
 
 /*
 NOTES:
@@ -64,11 +64,16 @@ class Belt : public Machine{
         std::vector<Matte*> movingMattes;//vector so belt can be resized
         int beltStart;
         int beltEnd;
+        int direction;//0-up,1-right,2-down,3-left
+        //
         bool process();
     public:
         int beltSize;
-        Belt() : Belt(0, 0, 1, 1){}
-        Belt(int x_pos, int y_pos, int x_size, int y_size);
+        Belt() : Belt(0, 0, nullptr, nullptr){}
+        Belt(int x_pos, int y_pos, SDL_Texture *texture, std::function<void(Machine*)> machinePlaced);
+        //
+        void render(SDL_Renderer* rend, SDL_Point camPos);
+        void update(MouseState *MouseState);
 };
 
 #endif

@@ -165,20 +165,10 @@ int Machine::getPlacingStage(){
     return placingStage;
 }
 
-Belt::Belt(int x_pos, int y_pos, int x_size, int y_size){
-    visited = false;
+Belt::Belt(int x_pos, int y_pos, SDL_Texture *texture, std::function<void(Machine*)> machinePlaced) : Machine(x_pos, y_pos, belt, texture, machinePlaced){
+    this->size.x = PX_CELL_SIZE;
+    this->size.y = PX_CELL_SIZE;
     //
-    for(int i = 0; i < MAX_PUTS; i++){
-        inputMachs[i] = nullptr;
-        outputMachs[i] = nullptr;
-        inputMattes[i] = nullptr;
-        outputMattes[i] = nullptr;
-        inputIdxs[i] = 0;
-    }
-    //
-    //for(int i = 0;)
-    processTimer = 0;
-    machineSpeed = 128;//starting speed for any machine
 }
 
 bool Belt::process(){
@@ -195,4 +185,47 @@ bool Belt::process(){
     outputMattes[0] = movingMattes[beltEnd];
     //
     return true;
+}
+
+void Belt::update(MouseState *mouseState){
+    if(placingStage > 0){
+        position.x = mouseState->mx - (PX_CELL_SIZE >> 1);
+        position.y = mouseState->my - (PX_CELL_SIZE >> 1);
+        //
+        if(mouseState->mouseUpEvent){
+            if(placingStage < 4){//1 or 3
+                placingStage++;
+                return;
+            }
+            //
+            size.x = 2;//switch to cell sizing
+            size.y = 2;
+            //
+            renderType = 0;
+            placingStage = 0;
+            usingImage = false;
+            //
+            machinePlaced(this);//call game function to move layer
+            //
+            return;
+        }else if(placingStage == 2 && mouseState->mouseDown){
+            placingStage++;
+        }
+        //
+        return;
+    }
+    //
+    if(processTimer > machineSpeed){
+        process();//transform input mattes into output mattes
+    }
+    //
+    visited = false;
+}
+
+void Belt::render(SDL_Renderer* rend, SDL_Point camPos){
+    if(placingStage > 0){
+        RendOb::render(rend, camPos);
+    }else{
+        //TODO: belt drawing
+    }
 }
