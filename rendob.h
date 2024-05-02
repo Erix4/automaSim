@@ -22,6 +22,8 @@ class RendOb{
         void setPosition(int x, int y);
         SDL_Point getPosition();
         void setColor(SDL_Color color);
+        SDL_Point getSize();
+        void setSize(SDL_Point size);
     protected:
         bool visible;
         bool usingImage;

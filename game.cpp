@@ -40,8 +40,8 @@ void Game::render(std::vector<RendOb*> objs[], SDL_Point camPos){
     //
     for(int j = 0; j < LAYER_NUM; j++){
         for(int i = 0; i < (int)objs[j].size(); i++){
-        objs[j][i]->render(rend, camPos);
-    }
+            objs[j][i]->render(rend, camPos);
+        }
     }
     //
     SDL_RenderPresent(rend);//load backbuffer onto screen
@@ -73,7 +73,6 @@ int Game::handleEvents(){
                 break;
             case SDL_MOUSEBUTTONUP:
                 mouseState->mouseUpEvent = true;
-				printf("mouseUp event\n");
                 break;
             case SDL_MOUSEWHEEL:
                 mouseState->pinchDist = (float)e.wheel.y / 100;
@@ -122,8 +121,112 @@ void Game::handleKeys(){
     auto state = SDL_GetMouseState(&(mouseState->mx), &(mouseState->my));
     mouseState->mouseDown = (state == 1);
     //
+    if(mouseState->pinchDist != 0){//this could be made smoother
+        float growthFactor = (mouseState->pinchDist * 20) + 1;
+        //printf("pinchDist: %f\n", mouseState->pinchDist);
+        PX_CELL_SIZE = ((float)PX_CELL_SIZE * growthFactor);
+        fieldPos.x += (mouseState->mx + fieldPos.x) * (growthFactor - 1);//adjust camera to zoom around mouse
+        fieldPos.y += (mouseState->my + fieldPos.y) * (growthFactor - 1);
+        //printf("calc cell size: %d\n", PX_CELL_SIZE);
+        updateVis = true;
+    }
+    //
+    if(updateVis){
+        if(fieldPos.x < -(SCREEN_WIDTH >> 1)) fieldPos.x = -(SCREEN_WIDTH >> 1);
+        if(fieldPos.y < -(SCREEN_HEIGHT >> 1)) fieldPos.y = -(SCREEN_HEIGHT >> 1);
+        if(fieldPos.x > (fieldSize.x * PX_CELL_SIZE) - (SCREEN_WIDTH >> 1)) fieldPos.x = ((fieldSize.x * PX_CELL_SIZE) - (SCREEN_WIDTH >> 1));
+        if(fieldPos.y > (fieldSize.y * PX_CELL_SIZE) - (SCREEN_HEIGHT >> 1)) fieldPos.y = ((fieldSize.y * PX_CELL_SIZE) - (SCREEN_HEIGHT >> 1));
+        //
+        if(PX_CELL_SIZE < (SCREEN_HEIGHT >> 6)) PX_CELL_SIZE = (SCREEN_HEIGHT >> 6);
+        if(PX_CELL_SIZE > (SCREEN_HEIGHT >> 2)) PX_CELL_SIZE = SCREEN_HEIGHT >> 2;
+        SCREEN_CELL_HEIGHT = SCREEN_HEIGHT / PX_CELL_SIZE;
+        SCREEN_CELL_WIDTH = SCREEN_WIDTH / PX_CELL_SIZE;
+    }
+    //
+    //printf("mouse state: d? (%d) busy (%d) pos (%d, %d) uv (%d)\n", mouseState->mouseDown, mouseState->busy, mouseState->mx, mouseState->my, updateVis);
+}
+
+void Game::handleClick(std::vector<RendOb*> objs[]){
     if(!mouseState->mouseDown && mouseState->busy > 1){
         mouseState->busy = 0;
+    }
+    //
+    if(mouseState->busy == 0 && mouseState->mouseDown){//clicking on field and nothing else
+        mouseState->busy = 3;
+    }
+    //
+    if(mouseState->busy == 3){//currently moving field
+        fieldPos.x += mouseState->last_mx - mouseState->mx;
+        fieldPos.y += mouseState->last_my - mouseState->my;
+        updateVis = true;
+    }else if(mouseState->busy == 1){//currently carrying machine
+        Machine *curMachine = (Machine*)mouseState->carrying;
+        //
+        SDL_Point pxCarryingPos;
+        SDL_Point carryingPos;
+        //
+        if(curMachine->getType() == belt){
+            pxCarryingPos.x = mouseState->mx - (PX_CELL_SIZE / 2);//put carried machine in center of mouse
+            pxCarryingPos.y = mouseState->my - (PX_CELL_SIZE / 2);
+        }else{
+            pxCarryingPos.x = mouseState->mx - PX_CELL_SIZE;//put carried machine in center of mouse
+            pxCarryingPos.y = mouseState->my - PX_CELL_SIZE;
+        }
+        //
+        int curPlacingStage = curMachine->getPlacingStage();//get placing stage
+        //
+        carryingPos.x = (pxCarryingPos.x + fieldPos.x + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;//round mouse pos to cell
+        carryingPos.y = (pxCarryingPos.y + fieldPos.y + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;
+        //
+        int ret;
+        Machine *collisionMachine;
+        //
+        if(curPlacingStage < 4){
+            curMachine->setPosition(pxCarryingPos.x, pxCarryingPos.y);//set to mouse pos no matter what
+            //
+            ret = validateCarryPos(carryingPos, collisionMachine, objs);//move mouse pos into field & check for collision
+            curMachine->setPlacingCellPos(carryingPos);//store validated carrypos in machine
+        }else{//belt looking for 2nd location, set size
+            SDL_Point machinePos = curMachine->getPosition();
+            if(std::abs(carryingPos.x - machinePos.x) > std::abs(carryingPos.y - machinePos.y)){//more x than y movement
+                //printf("more x movement bc (%d-%d) = %d > %d\n", carryingPos.x, machinePos.x, std::abs(carryingPos.x - machinePos.x), std::abs(carryingPos.y - machinePos.y));
+                highlight->setSize({std::abs(carryingPos.x - machinePos.x) + 1, 1});
+                if(carryingPos.x < machinePos.x){
+                    carryingPos = {machinePos.x - highlight->getSize().x + 1, machinePos.y};
+                }else{
+                    carryingPos = machinePos;
+                }
+            }else{
+                highlight->setSize({1, std::abs(carryingPos.y - machinePos.y) + 1});
+                if(carryingPos.y < machinePos.y){
+                    carryingPos = {machinePos.x, machinePos.y - highlight->getSize().y + 1};
+                }else{
+                    carryingPos = machinePos;
+                }
+            }
+            //
+            ret = validateCarryPos(carryingPos, collisionMachine, objs);//move mouse pos into field & check for collision
+        }
+        //
+        if(curMachine->getType() == belt){
+            ((Belt*)curMachine)->beltSize = ret - 1;//tell belt it's about to be destroyed if it so
+            //
+            for(int i = 0; i < 4; i++){
+                if(i < numConnectedMachines){
+                    connectionHighlights[i]->setSize(connectedMachines[i]->getSize());
+                }else{
+                    connectionHighlights[i]->setVisibility(false);
+                }
+            }
+        }
+        //
+        if(ret == 0){//in collision
+            highlight->setColor(SDLColor_CLEAR_RED);
+        }else{//no collision
+            highlight->setColor(SDLColor_CLEAR_BLUE);
+        }
+        //
+        highlight->setPosition(carryingPos.x, carryingPos.y);
     }
 }
 
@@ -148,6 +251,7 @@ void machineClicked(Machine* machine, int speed, int progress){
 }
 
 void Game::placeMachine(std::vector<RendOb*> gameObjects[], Machine *placedMachine){
+    printf("entered place machine\n");
     for(int i = 0; i < (int)gameObjects[2].size(); i++){
         if(gameObjects[2][i] == (RendOb*)placedMachine){
             gameObjects[2].erase(gameObjects[2].begin() + i);//remove ith item from 2nd layer of gameobjects
@@ -156,18 +260,41 @@ void Game::placeMachine(std::vector<RendOb*> gameObjects[], Machine *placedMachi
     }
     //
     mouseState->busy = 0;
+    highlight->setVisibility(false);
+    numConnectedMachines = 0;
     //
-    SDL_Point collisionPos;
-    SDL_Point carryPos = placedMachine->getPlacingCellPos();
-    int ret = validateCarryPos(carryPos, collisionPos, gameObjects);
-    printf("returned %d from pos (%d, %d) and collision (%d, %d)\n", ret, carryPos.x, carryPos.y, collisionPos.x, collisionPos.y);
+    Machine *collisionMachine;
+    SDL_Point carryPos = highlight->getPosition();
+    int ret = validateCarryPos(carryPos, collisionMachine, gameObjects);
+    printf("returned %d from pos (%d, %d)\n", ret, carryPos.x, carryPos.y);
     if(ret == 0){//placed in invalid area, delete
         //delete placedMachine; //TODO: memory leak?
         Mix_PlayChannel( -1, placeFailSound, 0 );
         return;
     }
     //
-    placedMachine->setPosition(carryPos.x, carryPos.y);
+    printf("checking (%d, %d) vs (%d, %d) and size (%d, %d)\n", placedMachine->getPosition().x, placedMachine->getPosition().y, highlight->getPosition().x, highlight->getPosition().y, highlight->getSize().x, highlight->getSize().y);
+    if(placedMachine->getType() == belt){
+        if(highlight->getPosition().x == placedMachine->getPosition().x && highlight->getPosition().y == placedMachine->getPosition().y){//going right or down
+            if(highlight->getSize().x > highlight->getSize().y){//going right
+                ((Belt*)placedMachine)->setDirection(1);
+                ((Belt*)placedMachine)->setUpBelt(highlight->getSize().x);
+            }else{//going down
+                printf("going down, setting to %d\n", highlight->getSize().y);
+                ((Belt*)placedMachine)->setDirection(2);
+                ((Belt*)placedMachine)->setUpBelt(highlight->getSize().y);
+            }
+        }else if(highlight->getPosition().x < placedMachine->getPosition().x){//going left
+            ((Belt*)placedMachine)->setDirection(3);
+            ((Belt*)placedMachine)->setUpBelt(placedMachine->getPosition().x - highlight->getPosition().x);
+        }else{//going up
+            ((Belt*)placedMachine)->setDirection(0);
+            ((Belt*)placedMachine)->setUpBelt(placedMachine->getPosition().y - highlight->getPosition().y);
+        }
+    }
+    //
+    placedMachine->setPosition(highlight->getPosition().x, highlight->getPosition().y);
+    placedMachine->setSize(highlight->getSize());
     //
     gameObjects[0].push_back(placedMachine);
     //
@@ -180,16 +307,24 @@ void Game::newMachine(int type, std::vector<RendOb*> gameObjects[]){
     RendOb* newMach;
     if(type == belt){
         newMach = new Belt(mouseState->mx - PX_CELL_SIZE, mouseState->my - PX_CELL_SIZE, imageTextures[type], std::bind(&Game::placeMachine, this, gameObjects, std::placeholders::_1));
+        highlight->setSize({1,1});
     }else{
         newMach = new Machine(mouseState->mx - PX_CELL_SIZE, mouseState->my - PX_CELL_SIZE, (machineType)type, imageTextures[type], std::bind(&Game::placeMachine, this, gameObjects, std::placeholders::_1));
+        highlight->setSize({2,2});
     }
     //
-    Mix_PlayChannel( -1, pickupSound, 0 );
+    Mix_PlayChannel(-1, pickupSound, 0);
     //
     gameObjects[2].push_back(newMach);
     //
     mouseState->busy = 1;
     mouseState->carrying = newMach;
+    //
+    highlight->setVisibility(true);
+    //
+    newMach->render(rend, fieldPos);//set carrying pos
+    SDL_Point carryingPos = ((Machine*)newMach)->getPlacingCellPos();
+    highlight->setPosition(carryingPos.x, carryingPos.y);
 }
 
 void Game::loadTextures(){
@@ -213,7 +348,9 @@ void Game::loadTextures(){
     //SDL_SetTextureScaleMode(textures[menuStartButton], SDL_ScaleModeBest);
 }
 
-int Game::validateCarryPos(SDL_Point &carryPos, SDL_Point &collisionPos, std::vector<RendOb*> objs[]){
+int Game::validateCarryPos(SDL_Point &carryPos, Machine *collisionMachine, std::vector<RendOb*> objs[]){
+    Machine *carryingMachine = (Machine*)mouseState->carrying;//look out for seg faults!
+    //
     if(carryPos.x < 0){
         carryPos.x = 0;
     }else if(carryPos.x + 2 > fieldSize.x){
@@ -225,42 +362,70 @@ int Game::validateCarryPos(SDL_Point &carryPos, SDL_Point &collisionPos, std::ve
         carryPos.y = fieldSize.y - 2;
     }
     //
-    /*SDL_Point pxPos = mouseState->carrying->getPosition();
-    SDL_Point modPos = {pxPos.x % PX_CELL_SIZE, pxPos.y % PX_CELL_SIZE};
-    SDL_Point leanPos;//position machine is leaning towards (to connect to)
-    //|x-0.5| > |y-0.5| -> x is closer to grid line
-    if(std::abs(modPos.x - (PX_CELL_SIZE >> 1)) > std::abs(modPos.y - (PX_CELL_SIZE >> 1))){//leaning vertically
-        if(modPos.y > (PX_CELL_SIZE >> 1)){//going up (negative y)
-            leanPos = {carryPos.x, carryPos.y - 1};
-        }else{
-            leanPos = {carryPos.x, carryPos.y + 1};
+    if(carryingMachine->getType() != belt){
+        for(int i = 0; i < (int)objs[0].size(); i++){
+            if(dynamic_cast<Machine*>(objs[0][i]) == nullptr) continue;//only check machines
+            collisionMachine = (Machine*)objs[0][i];
+            SDL_Point collisionPos = collisionMachine->getPosition();
+            SDL_Point collisionSize = collisionMachine->getSize();//can vary for belts
+            if(collisionDet(carryPos.x, carryPos.y, 2, 2,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                return 0;//placement in collision
+            }
         }
-    }else{//leaning horizontally
-        if(modPos.x > (PX_CELL_SIZE >> 2)){//going left (negative x)
-            leanPos = {carryPos.x - 1, carryPos.y};
-        }else{
-            leanPos = {carryPos.x + 1, carryPos.y};
-        }
-    }*/
+        return 2;
+    }
     //
     bool foundConnection = false;
+    numConnectedMachines = 0;
     for(int i = 0; i < (int)objs[0].size(); i++){
         if(dynamic_cast<Machine*>(objs[0][i]) == nullptr) continue;//only check machines
-        collisionPos = objs[0][i]->getPosition();
-        if(collisionDet(carryPos.x, carryPos.y, 2, 2,
-                    collisionPos.x, collisionPos.y, 2, 2)){
+        collisionMachine = (Machine*)objs[0][i];
+        SDL_Point collisionPos = collisionMachine->getPosition();
+        SDL_Point collisionSize = collisionMachine->getSize();
+        if(collisionDet(carryPos.x, carryPos.y, highlight->getSize().x, highlight->getSize().y,
+                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
             return 0;//placement in collision
         }
         //
-        /*if(collisionDet(leanPos.x, leanPos.y, 2, 2,
-                    collisionPos.x, collisionPos.y, 2, 2)){
-            foundConnection = true;//no collision, leaning towards connection
-            leanMachine = (Machine*)objs[0][i];
-        }*/
-        //
+        if(carryingMachine->getPlacingStage() < 4){//placing initial position, check on all sides
+            if(collisionDet(carryPos.x - 1, carryPos.y, 1, 1,
+                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                connectedMachines[numConnectedMachines] = collisionMachine;
+                numConnectedMachines++;
+                foundConnection = true;
+                continue;
+            }
+            //
+            if(collisionDet(carryPos.x, carryPos.y - 1, 1, 1,
+                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                connectedMachines[numConnectedMachines] = collisionMachine;
+                numConnectedMachines++;
+                foundConnection = true;
+                continue;
+            }
+            //
+            if(collisionDet(carryPos.x + 1, carryPos.y, 1, 1,
+                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                connectedMachines[numConnectedMachines] = collisionMachine;
+                numConnectedMachines++;
+                foundConnection = true;
+                continue;
+            }
+            //
+            if(collisionDet(carryPos.x, carryPos.y - 1, 1, 1,
+                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                connectedMachines[numConnectedMachines] = collisionMachine;
+                numConnectedMachines++;
+                foundConnection = true;
+                continue;
+            }
+        }else{
+            //
+        }
     }
     //
-    //if(foundConnection) return 1;
+    if(foundConnection) return 1;
     return 2;
 }
 
@@ -290,15 +455,14 @@ void Game::gameLoop(){//function called once
     //
     gameObjects[0].push_back(new Checkerboard(fieldSize, lightlightbrown, lightbrown));
     //
-    //printf("cur volume: %d\n", Mix_VolumeChunk(testChunk, -1));
-    //
-    RendOb *highlight = new RendOb(0,0,2,2,SDLColor_CLEAR_BLUE,0);
-    RendOb *connectionHighlight = new RendOb(0,0,2,2,SDLColor_CLEAR_GREEN,0);
-    bool newHighlight = false;
+    highlight = new RendOb(0,0,2,2,SDLColor_CLEAR_BLUE,0);
     highlight->setVisibility(false);
-    connectionHighlight->setVisibility(false);
     gameObjects[1].push_back(highlight);
-    gameObjects[1].push_back(connectionHighlight);
+    for(int i = 0; i < 4; i++){
+        connectionHighlights[i] = new RendOb(0,0,2,2,SDLColor_CLEAR_GREEN,0);
+        connectionHighlights[i]->setVisibility(false);
+        gameObjects[1].push_back(connectionHighlights[i]);
+    }
     //
     ShopPopup *shop = new ShopPopup(200, 50, 30, std::bind(&Game::newMachine, this, std::placeholders::_1, gameObjects));
     gameObjects[1].push_back(shop);
@@ -352,67 +516,7 @@ void Game::gameLoop(){//function called once
                     inputMachines[i]->stepThroughMachine(machineStack);
                 }
                 //
-                if(mouseState->busy == 0 && mouseState->mouseDown){//clicking on field and nothing else
-                    mouseState->busy = 3;
-                }
-                //
-                if(mouseState->busy == 0 && newHighlight){
-                    newHighlight = false;
-                    highlight->setVisibility(false);
-                    connectionHighlight->setVisibility(false);
-                }
-                //
-                if(mouseState->busy == 3){//currently moving field
-                    fieldPos.x += mouseState->last_mx - mouseState->mx;
-                    fieldPos.y += mouseState->last_my - mouseState->my;
-                    updateVis = true;
-                }else if(mouseState->busy == 1){//currently carrying machine
-                    if(newHighlight){
-                        highlight->setVisibility(true);
-                        SDL_Point carryingPos = ((Machine*)mouseState->carrying)->getPlacingCellPos();//look out for seg faults!
-                        //
-                        SDL_Point collisionPos;
-                        int ret = validateCarryPos(carryingPos, collisionPos, gameObjects);
-                        connectionHighlight->setVisibility(false);
-                        if(ret == 0){//in collision
-                            highlight->setColor(SDLColor_CLEAR_RED);
-                        }else if(ret == 1){//found connection
-                            connectionHighlight->setVisibility(true);
-                            connectionHighlight->setPosition(leanMachine->getPosition().x, leanMachine->getPosition().y);
-                            highlight->setColor(SDLColor_CLEAR_BLUE);
-                            //
-                        }else{//no collision
-                            highlight->setColor(SDLColor_CLEAR_BLUE);
-                            //
-                        }
-                        //
-                        highlight->setPosition(carryingPos.x, carryingPos.y);
-                    }else{
-                        newHighlight = true;
-                    }
-                }
-                //
-                if(mouseState->pinchDist != 0){//this could be made smoother
-                    float growthFactor = (mouseState->pinchDist * 20) + 1;
-                    //printf("pinchDist: %f\n", mouseState->pinchDist);
-                    PX_CELL_SIZE = ((float)PX_CELL_SIZE * growthFactor);
-                    fieldPos.x += (mouseState->mx + fieldPos.x) * (growthFactor - 1);//adjust camera to zoom around mouse
-                    fieldPos.y += (mouseState->my + fieldPos.y) * (growthFactor - 1);
-                    //printf("calc cell size: %d\n", PX_CELL_SIZE);
-                    updateVis = true;
-                }
-                //
-                if(updateVis){
-                    if(fieldPos.x < -(SCREEN_WIDTH >> 1)) fieldPos.x = -(SCREEN_WIDTH >> 1);
-                    if(fieldPos.y < -(SCREEN_HEIGHT >> 1)) fieldPos.y = -(SCREEN_HEIGHT >> 1);
-                    if(fieldPos.x > (fieldSize.x * PX_CELL_SIZE) - (SCREEN_WIDTH >> 1)) fieldPos.x = ((fieldSize.x * PX_CELL_SIZE) - (SCREEN_WIDTH >> 1));
-                    if(fieldPos.y > (fieldSize.y * PX_CELL_SIZE) - (SCREEN_HEIGHT >> 1)) fieldPos.y = ((fieldSize.y * PX_CELL_SIZE) - (SCREEN_HEIGHT >> 1));
-                    //
-                    if(PX_CELL_SIZE < (SCREEN_HEIGHT >> 6)) PX_CELL_SIZE = (SCREEN_HEIGHT >> 6);
-                    if(PX_CELL_SIZE > (SCREEN_HEIGHT >> 2)) PX_CELL_SIZE = SCREEN_HEIGHT >> 2;
-                    SCREEN_CELL_HEIGHT = SCREEN_HEIGHT / PX_CELL_SIZE;
-                    SCREEN_CELL_WIDTH = SCREEN_WIDTH / PX_CELL_SIZE;
-                }
+                handleClick(gameObjects);//wait until after update to allow button collision checking
                 //
                 render(gameObjects, fieldPos);
                 //

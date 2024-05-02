@@ -92,6 +92,14 @@ void RendOb::setColor(SDL_Color color){
     this->color = color;
 }
 
+SDL_Point RendOb::getSize(){
+    return size;
+}
+
+void RendOb::setSize(SDL_Point size){
+    this->size = size;
+}
+
 Text::Text(){//default constructor
     this->text = "Incomplete";
     //
@@ -222,6 +230,7 @@ void Button::update(MouseState* mouseState){
     if(collisionDet(mouseState->mx, mouseState->my, 0, 0, 
                     pxRect.x, pxRect.y, pxRect.w, pxRect.h)){//mouse over button
         if(!mouseState->busy && mouseState->mouseDown){//mouse clicked and not clicking other thing
+            printf("button clicked\n");
             clicked = true;
             mouseState->busy = 2;
             color = clickColor;

@@ -36,7 +36,6 @@ Machine::Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture, s
     machineSpeed = 128;//starting speed for any machine
     //
     placingStage = 1;
-    placingCellPos = {0, 0};
     //
     this->machinePlaced = machinePlaced;
     //
@@ -49,9 +48,6 @@ Machine::Machine(int x_pos, int y_pos, machineType type, SDL_Texture *texture, s
 
 void Machine::update(MouseState *mouseState){
     if(placingStage > 0){
-        position.x = mouseState->mx - PX_CELL_SIZE;
-        position.y = mouseState->my - PX_CELL_SIZE;
-        //
         if(mouseState->mouseUpEvent){
             if(placingStage == 1){
                 placingStage++;
@@ -141,34 +137,32 @@ void Machine::connectMachine(bool input, int idx, Machine* mach){
 }
 
 void Machine::render(SDL_Renderer* rend, SDL_Point camPos){
-    if(placingStage > 0){
-        placingCellPos.x = (position.x + camPos.x + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;
-        placingCellPos.y = (position.y + camPos.y + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;
-        //
-        /*SDL_Rect highlightRect = {((placingCellPos.x * PX_CELL_SIZE) - camPos.x),
-                                ((placingCellPos.y * PX_CELL_SIZE) - camPos.y),
-                                size.x * PX_CELL_SIZE,
-                                size.y * PX_CELL_SIZE};
-        //
-        //TODO: collision detection for highlight color
-        SDL_SetRenderDrawColor(rend, SDLColor_LIGHT_BLUE.r, SDLColor_LIGHT_BLUE.g, SDLColor_LIGHT_BLUE.b, 100);
-        SDL_RenderFillRect(rend, &highlightRect);*/
-    }
     RendOb::render(rend, camPos);
-}
-
-SDL_Point Machine::getPlacingCellPos(){
-    return placingCellPos;
 }
 
 int Machine::getPlacingStage(){
     return placingStage;
 }
 
+SDL_Point Machine::getPlacingCellPos(){
+    return placingCellPos;
+}
+
+void Machine::setPlacingCellPos(SDL_Point cellPos){
+    placingCellPos = cellPos;
+}
+
+machineType Machine::getType(){
+    return type;
+}
+
 Belt::Belt(int x_pos, int y_pos, SDL_Texture *texture, std::function<void(Machine*)> machinePlaced) : Machine(x_pos, y_pos, belt, texture, machinePlaced){
     this->size.x = PX_CELL_SIZE;
     this->size.y = PX_CELL_SIZE;
     //
+    beltSize = 0;
+    beltStart = 0;
+    beltEnd = 0;
 }
 
 bool Belt::process(){
@@ -182,6 +176,7 @@ bool Belt::process(){
         movingMattes[beltStart] = inputMattes[0];//add matte to belt
         inputMattes[0] = nullptr;//remove from input
     }
+    printf("belt end %d vs size %d & rend size (%d, %d), pos (%d, %d)\n", beltEnd, movingMattes.size(), size.x, size.y, position.x, position.y);
     outputMattes[0] = movingMattes[beltEnd];
     //
     return true;
@@ -189,34 +184,47 @@ bool Belt::process(){
 
 void Belt::update(MouseState *mouseState){
     if(placingStage > 0){
-        position.x = mouseState->mx - (PX_CELL_SIZE >> 1);
-        position.y = mouseState->my - (PX_CELL_SIZE >> 1);
-        //
         if(mouseState->mouseUpEvent){
-            if(placingStage < 4){//1 or 3
-                placingStage++;
+            placingStage++;//moves 1->2, 3->4
+            if(placingStage == 2){//first release
                 return;
             }
             //
-            size.x = 2;//switch to cell sizing
-            size.y = 2;
+            if(placingStage == 4){//second release (set starting position)
+                position.x = placingCellPos.x;
+                position.y = placingCellPos.y;
+                //
+                if(beltSize == -1){//belt start is in collision
+                    machinePlaced(this);//destroy self
+                }
+                //
+                printf("set position to %d, %d\n", position.x, position.y);
+                //
+                usingImage = false;
+                color = SDLColor_CLEAR;//make invisible
+                //
+                return;
+            }
+            //
+            //third release (done placing)
             //
             renderType = 0;
             placingStage = 0;
-            usingImage = false;
             //
             machinePlaced(this);//call game function to move layer
             //
             return;
-        }else if(placingStage == 2 && mouseState->mouseDown){
+        }else if(placingStage % 2 == 0 && mouseState->mouseDown){
             placingStage++;
         }
         //
         return;
     }
     //
+    processTimer++;
     if(processTimer > machineSpeed){
         process();//transform input mattes into output mattes
+        processTimer = 0;
     }
     //
     visited = false;
@@ -224,8 +232,38 @@ void Belt::update(MouseState *mouseState){
 
 void Belt::render(SDL_Renderer* rend, SDL_Point camPos){
     if(placingStage > 0){
-        RendOb::render(rend, camPos);
+        Machine::render(rend, camPos);
     }else{
-        //TODO: belt drawing
+        int startOffset = PX_CELL_SIZE * processTimer / machineSpeed;
+        SDL_Rect curRect;
+        SDL_Color curColor;
+        if(direction % 2 == 0){//vertical belt
+            curRect = {position.x * PX_CELL_SIZE - camPos.x, 0, (4 * PX_CELL_SIZE / 5), (PX_CELL_SIZE / 4)};
+            startOffset += position.y - camPos.y;
+            printf("vertical belt with x %d and offset %d\n", curRect.x, startOffset);
+        }else{
+            curRect = {0, position.y * PX_CELL_SIZE - camPos.y, (4 * PX_CELL_SIZE / 5), (PX_CELL_SIZE / 4)};
+            startOffset += position.x - camPos.x;
+        }
+        for(int i = 0; i < beltSize * 4; i++){
+            ((direction % 2 == 0) ? curRect.y : curRect.x) = startOffset;// + (i * (PX_CELL_SIZE / 4));
+            curColor = (i % 2 == 0) ? SDLColor_LIGHT_BLACK : SDLColor_DARK_BLUE;
+            SDL_SetRenderDrawColor(rend, curColor.r, curColor.g, curColor.b, 255);
+            SDL_RenderFillRect(rend, &curRect);
+        }
     }
+}
+
+void Belt::setDirection(int direction){
+    this->direction = direction;
+}
+
+void Belt::setUpBelt(int beltSize){
+    this->beltSize = beltSize;
+    this->beltEnd = beltSize - 1;
+    //
+    for(int i = 0; i < beltSize; i++){
+        movingMattes.push_back(nullptr);
+    }
+    printf("setup with size (%d, %d) and belt size %d\n", size.x, size.y, movingMattes.size());
 }

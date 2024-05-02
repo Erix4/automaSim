@@ -55,7 +55,9 @@ class Machine : public RendOb{
         void update(MouseState *MouseState);
         //
         SDL_Point getPlacingCellPos();
+        void setPlacingCellPos(SDL_Point);
         int getPlacingStage();
+        machineType getType();
 };
 
 /*Belt is slightly different because it needs a resizeable array of materials on the belt*/
@@ -74,6 +76,9 @@ class Belt : public Machine{
         //
         void render(SDL_Renderer* rend, SDL_Point camPos);
         void update(MouseState *MouseState);
+        //
+        void setDirection(int direction);
+        void setUpBelt(int beltSize);
 };
 
 #endif

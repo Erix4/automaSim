@@ -49,13 +49,13 @@ SDL_Color const SDLColor_DARK_GRAY = hex2sdl("878787");
 //old theme
 SDL_Color const SDLColor_LIGHT_PURPLE = hex2sdl("d8d4f2");//old
 SDL_Color const SDLColor_RED_PURPLE = hex2sdl("c4b2bc");//old
-SDL_Color const SDLColor_LIGHT_BLACK = hex2sdl("332e3c");//old
 SDL_Color const SDLColor_BROWN = hex2sdl("846c5b");//old
 
 //new theme
 SDL_Color const SDLColor_DARK_BLUE = hex2sdl("2f4858");
 SDL_Color const SDLColor_BLUE = hex2sdl("33658a");
 SDL_Color const SDLColor_ORANGE = hex2sdl("F6AE2D");
+SDL_Color const SDLColor_LIGHT_BLACK = hex2sdl("0f161b");
 
 //highlights
 SDL_Color const SDLColor_CLEAR_BLUE = {85, 221, 224, 100};

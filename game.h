@@ -28,13 +28,17 @@ class Game{
         SDL_Renderer *rend;
         SDL_Texture *imageTextures[20];
         //
-        Machine *leanMachine;//machine that will be connected to
+        std::array<Machine*, 4> connectedMachines;
+        int numConnectedMachines;
+        RendOb *highlight;
+        RendOb *connectionHighlights[4];//has to be initialized bc ugh
         //
         int handleEvents();
         void handleKeys();
+        void handleClick(std::vector<RendOb*> objs[]);
         bool handleMouseTitle();
         void loadTextures();
-        int validateCarryPos(SDL_Point &carryPos, SDL_Point &collisionPos, std::vector<RendOb*> objs[]);//validates carrypos and returns machine in collision, if applicable
+        int validateCarryPos(SDL_Point &carryPos, Machine *collisionMachine, std::vector<RendOb*> objs[]);//validates carrypos and returns machine in collision, if applicable
         void render(std::vector<RendOb*> objs[], SDL_Point camPos);
     public:
         Game(SDL_Renderer* rend);
