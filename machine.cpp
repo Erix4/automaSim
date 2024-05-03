@@ -172,11 +172,12 @@ bool Belt::process(){
         beltStart = 0;
     }
     //
+    printf("size: (%d, %d), pos: (%d, %d)\n", size.x, size.y, position.x, position.y);
+    //
     if(inputMattes[0] != nullptr){//a material has been input
         movingMattes[beltStart] = inputMattes[0];//add matte to belt
         inputMattes[0] = nullptr;//remove from input
     }
-    printf("belt end %d vs size %d & rend size (%d, %d), pos (%d, %d)\n", beltEnd, movingMattes.size(), size.x, size.y, position.x, position.y);
     outputMattes[0] = movingMattes[beltEnd];
     //
     return true;
@@ -234,28 +235,55 @@ void Belt::render(SDL_Renderer* rend, SDL_Point camPos){
     if(placingStage > 0){
         Machine::render(rend, camPos);
     }else{
-        int startOffset = PX_CELL_SIZE * processTimer / machineSpeed;
+        //TODO: account for belt direction
+        int startOffset = PX_CELL_SIZE * (processTimer % (machineSpeed / 4)) / machineSpeed;
+        int colorStart = (processTimer % (machineSpeed / 2)) / (machineSpeed / 4);
+        int offset;
         SDL_Rect curRect;
         SDL_Color curColor;
+        //
         if(direction % 2 == 0){//vertical belt
-            curRect = {position.x * PX_CELL_SIZE - camPos.x, 0, (4 * PX_CELL_SIZE / 5), (PX_CELL_SIZE / 4)};
-            startOffset += position.y - camPos.y;
-            printf("vertical belt with x %d and offset %d\n", curRect.x, startOffset);
+            offset = (position.y * PX_CELL_SIZE) - camPos.y;
+            curRect = {position.x * PX_CELL_SIZE - camPos.x + (PX_CELL_SIZE / 10), offset, (4 * PX_CELL_SIZE / 5), startOffset};
+            curColor = (colorStart % 2 == 0) ? SDLColor_LIGHT_BLACK : SDLColor_DARK_BLUE;
+            SDL_SetRenderDrawColor(rend, curColor.r, curColor.g, curColor.b, 255);
+            SDL_RenderFillRect(rend, &curRect);
+            //
+            curRect.h = PX_CELL_SIZE / 4;
         }else{
-            curRect = {0, position.y * PX_CELL_SIZE - camPos.y, (4 * PX_CELL_SIZE / 5), (PX_CELL_SIZE / 4)};
-            startOffset += position.x - camPos.x;
+            offset = (position.x * PX_CELL_SIZE) - camPos.x;
+            curRect = {offset, position.y * PX_CELL_SIZE - camPos.y + (PX_CELL_SIZE / 10), startOffset, (4 * PX_CELL_SIZE / 5)};
+            curColor = (colorStart % 2 == 0) ? SDLColor_LIGHT_BLACK : SDLColor_DARK_BLUE;
+            SDL_SetRenderDrawColor(rend, curColor.r, curColor.g, curColor.b, 255);
+            SDL_RenderFillRect(rend, &curRect);
+            //
+            curRect.w = PX_CELL_SIZE / 4;
         }
-        for(int i = 0; i < beltSize * 4; i++){
-            ((direction % 2 == 0) ? curRect.y : curRect.x) = startOffset;// + (i * (PX_CELL_SIZE / 4));
-            curColor = (i % 2 == 0) ? SDLColor_LIGHT_BLACK : SDLColor_DARK_BLUE;
+        offset += startOffset;
+        //
+        colorStart = !colorStart;
+        for(int i = 0; i < beltSize * 4 - 1; i++){
+            ((direction % 2 == 0) ? curRect.y : curRect.x) = offset + (i * (PX_CELL_SIZE / 4));
+            curColor = ((i + colorStart) % 2 == 0) ? SDLColor_LIGHT_BLACK : SDLColor_DARK_BLUE;
             SDL_SetRenderDrawColor(rend, curColor.r, curColor.g, curColor.b, 255);
             SDL_RenderFillRect(rend, &curRect);
         }
+        //
+        colorStart = !colorStart;
+        curColor = (colorStart % 2 == 0) ? SDLColor_LIGHT_BLACK : SDLColor_DARK_BLUE;
+        ((direction % 2 == 0) ? curRect.y : curRect.x) = offset + ((beltSize * 4 - 1) * (PX_CELL_SIZE / 4));
+        ((direction % 2 == 0) ? curRect.h : curRect.w) = (PX_CELL_SIZE / 4) - startOffset;
+        SDL_SetRenderDrawColor(rend, curColor.r, curColor.g, curColor.b, 255);
+        SDL_RenderFillRect(rend, &curRect);
     }
 }
 
 void Belt::setDirection(int direction){
     this->direction = direction;
+}
+
+int Belt::getDirection(){
+    return direction;
 }
 
 void Belt::setUpBelt(int beltSize){
@@ -265,5 +293,4 @@ void Belt::setUpBelt(int beltSize){
     for(int i = 0; i < beltSize; i++){
         movingMattes.push_back(nullptr);
     }
-    printf("setup with size (%d, %d) and belt size %d\n", size.x, size.y, movingMattes.size());
 }

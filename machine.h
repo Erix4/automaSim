@@ -78,6 +78,7 @@ class Belt : public Machine{
         void update(MouseState *MouseState);
         //
         void setDirection(int direction);
+        int getDirection();
         void setUpBelt(int beltSize);
 };
 
