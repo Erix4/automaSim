@@ -210,15 +210,15 @@ void Game::handleClick(std::vector<RendOb*> objs[]){
         //
         if(curMachine->getType() == belt){
             ((Belt*)curMachine)->beltSize = ret - 1;//tell belt it's about to be destroyed if it so
-            //
-            for(int i = 0; i < 4; i++){
-                if(i < numConnectedMachines){
-                    connectionHighlights[i]->setSize(connectedMachines[i]->getSize());
-                    connectionHighlights[i]->setPosition(connectedMachines[i]->getPosition().x, connectedMachines[i]->getPosition().y);
-                    connectionHighlights[i]->setVisibility(true);
-                }else{
-                    connectionHighlights[i]->setVisibility(false);
-                }
+        }
+        //
+        for(int i = 0; i < 4; i++){
+            if(i < numConnectedMachines){
+                connectionHighlights[i]->setSize(connectedMachines[i]->getSize());
+                connectionHighlights[i]->setPosition(connectedMachines[i]->getPosition().x, connectedMachines[i]->getPosition().y);
+                connectionHighlights[i]->setVisibility(true);
+            }else{
+                connectionHighlights[i]->setVisibility(false);
             }
         }
         //
@@ -264,6 +264,9 @@ void Game::placeMachine(std::vector<RendOb*> gameObjects[], Machine *placedMachi
     mouseState->busy = 0;
     highlight->setVisibility(false);
     numConnectedMachines = 0;
+    for(int i = 0; i < 4; i++){
+        connectionHighlights[i]->setVisibility(false);
+    }
     //
     Machine *collisionMachine;
     SDL_Point carryPos = highlight->getPosition();
@@ -282,16 +285,15 @@ void Game::placeMachine(std::vector<RendOb*> gameObjects[], Machine *placedMachi
                 ((Belt*)placedMachine)->setDirection(1);
                 ((Belt*)placedMachine)->setUpBelt(highlight->getSize().x);
             }else{//going down
-                printf("going down, setting to %d\n", highlight->getSize().y);
                 ((Belt*)placedMachine)->setDirection(2);
                 ((Belt*)placedMachine)->setUpBelt(highlight->getSize().y);
             }
         }else if(highlight->getPosition().x < placedMachine->getPosition().x){//going left
             ((Belt*)placedMachine)->setDirection(3);
-            ((Belt*)placedMachine)->setUpBelt(placedMachine->getPosition().x - highlight->getPosition().x);
+            ((Belt*)placedMachine)->setUpBelt(placedMachine->getPosition().x - highlight->getPosition().x + 1);
         }else{//going up
             ((Belt*)placedMachine)->setDirection(0);
-            ((Belt*)placedMachine)->setUpBelt(placedMachine->getPosition().y - highlight->getPosition().y);
+            ((Belt*)placedMachine)->setUpBelt(placedMachine->getPosition().y - highlight->getPosition().y + 1);
         }
     }
     //
@@ -354,29 +356,22 @@ int Game::validateCarryPos(SDL_Point &carryPos, Machine *collisionMachine, std::
     Machine *carryingMachine = (Machine*)mouseState->carrying;//look out for seg faults!
     //
     if(carryPos.x < 0){
+        return 0;
         carryPos.x = 0;
     }else if(carryPos.x + 2 > fieldSize.x){
+        return 0;
         carryPos.x = fieldSize.x - 2;
     }
     if(carryPos.y < 0){
+        return 0;
         carryPos.y = 0;
     }else if(carryPos.y + 2 > fieldSize.y){
+        return 0;
         carryPos.y = fieldSize.y - 2;
     }
     //
-    if(carryingMachine->getType() != belt){
-        for(int i = 0; i < (int)objs[0].size(); i++){
-            if(dynamic_cast<Machine*>(objs[0][i]) == nullptr) continue;//only check machines
-            collisionMachine = (Machine*)objs[0][i];
-            SDL_Point collisionPos = collisionMachine->getPosition();
-            SDL_Point collisionSize = collisionMachine->getSize();//can vary for belts
-            if(collisionDet(carryPos.x, carryPos.y, 2, 2,
-                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
-                return 0;//placement in collision
-            }
-        }
-        return 2;
-    }
+    SDL_Point carrySize = highlight->getSize();
+    //if(carryingMachine->getType() != belt) carrySize = {2, 2};
     //
     bool foundConnection = false;
     numConnectedMachines = 0;
@@ -384,75 +379,140 @@ int Game::validateCarryPos(SDL_Point &carryPos, Machine *collisionMachine, std::
         if(dynamic_cast<Machine*>(objs[0][i]) == nullptr) continue;//only check machines
         collisionMachine = (Machine*)objs[0][i];
         SDL_Point collisionPos = collisionMachine->getPosition();
-        SDL_Point collisionSize = collisionMachine->getSize();
-        if(collisionDet(carryPos.x, carryPos.y, highlight->getSize().x, highlight->getSize().y,
+        SDL_Point collisionSize = collisionMachine->getSize();//can vary for belts
+        if(collisionDet(carryPos.x, carryPos.y, carrySize.x, carrySize.y,
                     collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+            numConnectedMachines = 0;//remove any connections
             return 0;//placement in collision
         }
         //
-        if(carryingMachine->getType() != belt && collisionMachine->getType() != belt) continue;
+        //if(carryingMachine->getType() != belt && collisionMachine->getType() != belt) continue;//no machines are belts
         //
-        //TODO: machines aren't connecting to belts
-        //
-        if(carryingMachine->getPlacingStage() < 4){//placing initial position, check on all sides
-            if(collisionDet(carryPos.x - 1, carryPos.y, 1, 1,
-                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+        if(collisionMachine->getType() == belt){//currently checked machine is belt
+            int collDir = ((Belt*)collisionMachine)->getDirection();
+            SDL_Point offsetCoords = {0,0};
+            //
+            offsetCoords.x += ((collDir % 2) == 1) ? collDir-2 : 0;//checked for both sides of belt
+            offsetCoords.y += ((collDir % 2) == 0) ? collDir-1 : 0;
+            //
+            if(collisionDet(carryPos.x + offsetCoords.x, carryPos.y + offsetCoords.y, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
                 connectedMachines[numConnectedMachines] = collisionMachine;
                 numConnectedMachines++;
                 foundConnection = true;
                 continue;
             }
             //
-            if(collisionDet(carryPos.x, carryPos.y - 1, 1, 1,
-                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+            if(collisionDet(carryPos.x - offsetCoords.x, carryPos.y - offsetCoords.y, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
                 connectedMachines[numConnectedMachines] = collisionMachine;
                 numConnectedMachines++;
                 foundConnection = true;
                 continue;
             }
-            //
-            if(collisionDet(carryPos.x + 1, carryPos.y, 1, 1,
-                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
-                connectedMachines[numConnectedMachines] = collisionMachine;
-                numConnectedMachines++;
-                foundConnection = true;
-                continue;
-            }
-            //
-            if(collisionDet(carryPos.x, carryPos.y + 1, 1, 1,
-                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
-                connectedMachines[numConnectedMachines] = collisionMachine;
-                numConnectedMachines++;
-                foundConnection = true;
-                continue;
-            }
-        }else{//must be belt in second stage
-            //TODO: allow highlighting of machine fr/ first & second stages
-            SDL_Point testPoint = carryPos;
-            switch(((Belt*)carryingMachine)->getDirection()){
-                case 0://up
-                    testPoint.y -= 1;
-                    break;
-                case 1://right
-                    testPoint.x += 1;
-                    break;
-                case 2://down
-                    testPoint.y += 1;
-                    break;
-                default://left
-                    testPoint.x -= 1;
-            }
-            if(collisionDet(carryPos.x - 1, carryPos.y, carryingMachine->getSize().x, carryingMachine->getSize().y,
-                    collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
-                connectedMachines[0] = collisionMachine;
-                numConnectedMachines = 1;
-                foundConnection = true;
-                continue;
+        }else if(carryingMachine->getType() == belt){//currently carried machine is belt
+            if(carryingMachine->getPlacingStage() < 4){//placing initial position, check on all sides
+                if(collisionDet(carryPos.x - 1, carryPos.y, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                    printf("in collision\n");
+                    connectedMachines[numConnectedMachines] = collisionMachine;
+                    numConnectedMachines++;
+                    foundConnection = true;
+                    continue;
+                }
+                //
+                if(collisionDet(carryPos.x, carryPos.y - 1, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                    connectedMachines[numConnectedMachines] = collisionMachine;
+                    numConnectedMachines++;
+                    foundConnection = true;
+                    continue;
+                }
+                //
+                if(collisionDet(carryPos.x + 1, carryPos.y, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                    connectedMachines[numConnectedMachines] = collisionMachine;
+                    numConnectedMachines++;
+                    foundConnection = true;
+                    continue;
+                }
+                //
+                if(collisionDet(carryPos.x, carryPos.y + 1, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                    connectedMachines[numConnectedMachines] = collisionMachine;
+                    numConnectedMachines++;
+                    foundConnection = true;
+                    continue;
+                }
+            }else{//must be belt in second stage
+                if(carrySize.x > 1){//horizontal
+                    if(collisionDet(carryPos.x - 1, carryPos.y, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                        connectedMachines[numConnectedMachines] = collisionMachine;
+                        numConnectedMachines++;
+                        foundConnection = true;
+                        continue;
+                    }
+                    //
+                    if(collisionDet(carryPos.x + 1, carryPos.y, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                        connectedMachines[numConnectedMachines] = collisionMachine;
+                        numConnectedMachines++;
+                        foundConnection = true;
+                        continue;
+                    }
+                }else if(highlight->getSize().y > 1){//vertical
+                    if(collisionDet(carryPos.x, carryPos.y - 1, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                        connectedMachines[numConnectedMachines] = collisionMachine;
+                        numConnectedMachines++;
+                        foundConnection = true;
+                        continue;
+                    }
+                    //
+                    if(collisionDet(carryPos.x, carryPos.y + 1, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                        connectedMachines[numConnectedMachines] = collisionMachine;
+                        numConnectedMachines++;
+                        foundConnection = true;
+                        continue;
+                    }
+                }else{//no particular direction
+                    if(collisionDet(carryPos.x - 1, carryPos.y, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                        connectedMachines[numConnectedMachines] = collisionMachine;
+                        numConnectedMachines++;
+                        foundConnection = true;
+                        continue;
+                    }
+                    //
+                    if(collisionDet(carryPos.x + 1, carryPos.y, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                        connectedMachines[numConnectedMachines] = collisionMachine;
+                        numConnectedMachines++;
+                        foundConnection = true;
+                        continue;
+                    }
+                    //
+                    if(collisionDet(carryPos.x, carryPos.y - 1, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                        connectedMachines[numConnectedMachines] = collisionMachine;
+                        numConnectedMachines++;
+                        foundConnection = true;
+                        continue;
+                    }
+                    //
+                    if(collisionDet(carryPos.x, carryPos.y + 1, carrySize.x, carrySize.y,
+                        collisionPos.x, collisionPos.y, collisionSize.x, collisionSize.y)){
+                        connectedMachines[numConnectedMachines] = collisionMachine;
+                        numConnectedMachines++;
+                        foundConnection = true;
+                        continue;
+                    }
+                }
             }
         }
     }
-    //
-    if(foundConnection) return 1;
     return 2;
 }
 

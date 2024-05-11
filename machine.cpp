@@ -172,7 +172,7 @@ bool Belt::process(){
         beltStart = 0;
     }
     //
-    printf("size: (%d, %d), pos: (%d, %d)\n", size.x, size.y, position.x, position.y);
+    printf("size: (%d, %d), pos: (%d, %d), beltsize: %d\n", size.x, size.y, position.x, position.y, beltSize);
     //
     if(inputMattes[0] != nullptr){//a material has been input
         movingMattes[beltStart] = inputMattes[0];//add matte to belt
@@ -246,19 +246,16 @@ void Belt::render(SDL_Renderer* rend, SDL_Point camPos){
             offset = (position.y * PX_CELL_SIZE) - camPos.y;
             curRect = {position.x * PX_CELL_SIZE - camPos.x + (PX_CELL_SIZE / 10), offset, (4 * PX_CELL_SIZE / 5), startOffset};
             curColor = (colorStart % 2 == 0) ? SDLColor_LIGHT_BLACK : SDLColor_DARK_BLUE;
-            SDL_SetRenderDrawColor(rend, curColor.r, curColor.g, curColor.b, 255);
-            SDL_RenderFillRect(rend, &curRect);
-            //
-            curRect.h = PX_CELL_SIZE / 4;
         }else{
             offset = (position.x * PX_CELL_SIZE) - camPos.x;
             curRect = {offset, position.y * PX_CELL_SIZE - camPos.y + (PX_CELL_SIZE / 10), startOffset, (4 * PX_CELL_SIZE / 5)};
             curColor = (colorStart % 2 == 0) ? SDLColor_LIGHT_BLACK : SDLColor_DARK_BLUE;
-            SDL_SetRenderDrawColor(rend, curColor.r, curColor.g, curColor.b, 255);
-            SDL_RenderFillRect(rend, &curRect);
-            //
-            curRect.w = PX_CELL_SIZE / 4;
         }
+        //
+        SDL_SetRenderDrawColor(rend, curColor.r, curColor.g, curColor.b, 255);
+        SDL_RenderFillRect(rend, &curRect);
+        ((direction % 2 == 0) ? curRect.h : curRect.w) = PX_CELL_SIZE / 4;
+        //
         offset += startOffset;
         //
         colorStart = !colorStart;
