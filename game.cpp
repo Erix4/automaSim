@@ -354,23 +354,11 @@ void Game::loadTextures(){
 
 int Game::validateCarryPos(SDL_Point &carryPos, Machine *collisionMachine, std::vector<RendOb*> objs[]){
     Machine *carryingMachine = (Machine*)mouseState->carrying;//look out for seg faults!
-    //
-    if(carryPos.x < 0){
-        return 0;
-        carryPos.x = 0;
-    }else if(carryPos.x + 2 > fieldSize.x){
-        return 0;
-        carryPos.x = fieldSize.x - 2;
-    }
-    if(carryPos.y < 0){
-        return 0;
-        carryPos.y = 0;
-    }else if(carryPos.y + 2 > fieldSize.y){
-        return 0;
-        carryPos.y = fieldSize.y - 2;
-    }
-    //
     SDL_Point carrySize = highlight->getSize();
+    //
+    if(carryPos.x < 0 || carryPos.x + carrySize.x > fieldSize.x || carryPos.y < 0 || carryPos.y + carrySize.y > fieldSize.y){
+        return 0;
+    }
     //if(carryingMachine->getType() != belt) carrySize = {2, 2};
     //
     bool foundConnection = false;
