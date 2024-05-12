@@ -176,7 +176,7 @@ void Game::handleClick(std::vector<RendOb*> objs[]){
         int curPlacingStage = curMachine->getPlacingStage();//get placing stage
         //
         carryingPos.x = (pxCarryingPos.x + fieldPos.x + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;//round mouse pos to cell
-        carryingPos.y = (pxCarryingPos.y + fieldPos.y + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;
+        carryingPos.y = (pxCarryingPos.y + fieldPos.y + (PX_CELL_SIZE / 2)) / PX_CELL_SIZE;//
         //
         int ret;
         Machine *collisionMachine;
@@ -263,7 +263,6 @@ void Game::placeMachine(std::vector<RendOb*> gameObjects[], Machine *placedMachi
     //
     mouseState->busy = 0;
     highlight->setVisibility(false);
-    numConnectedMachines = 0;
     for(int i = 0; i < 4; i++){
         connectionHighlights[i]->setVisibility(false);
     }
@@ -284,9 +283,20 @@ void Game::placeMachine(std::vector<RendOb*> gameObjects[], Machine *placedMachi
             if(highlight->getSize().x > highlight->getSize().y){//going right
                 ((Belt*)placedMachine)->setDirection(1);
                 ((Belt*)placedMachine)->setUpBelt(highlight->getSize().x);
-            }else{//going down
+            }else if(highlight->getSize().x < highlight->getSize().y){//going down
                 ((Belt*)placedMachine)->setDirection(2);
                 ((Belt*)placedMachine)->setUpBelt(highlight->getSize().y);
+            }else{//decide based on where connections are
+                int xTotal = 0; int yTotal = 0;
+                for(int i = 0; i < numConnectedMachines; i++){//look at connections
+                    xTotal += abs(highlight->getPosition().x - connectedMachines[i]->getPosition().x);
+                    yTotal += abs(highlight->getPosition().y - connectedMachines[i]->getPosition().y);
+                }
+                //
+                printf("finished comparing with x %d and y %d\n", xTotal, yTotal);
+                if(xTotal > yTotal){
+                    ((Belt*)placedMachine)->setDirection(3);//but which direction??????
+                }
             }
         }else if(highlight->getPosition().x < placedMachine->getPosition().x){//going left
             ((Belt*)placedMachine)->setDirection(3);
@@ -303,6 +313,7 @@ void Game::placeMachine(std::vector<RendOb*> gameObjects[], Machine *placedMachi
     gameObjects[0].push_back(placedMachine);
     //
     Mix_PlayChannel( -1, placeSound, 0 );
+    numConnectedMachines = 0;
 }
 
 void Game::newMachine(int type, std::vector<RendOb*> gameObjects[]){
@@ -355,6 +366,9 @@ void Game::loadTextures(){
 int Game::validateCarryPos(SDL_Point &carryPos, Machine *collisionMachine, std::vector<RendOb*> objs[]){
     Machine *carryingMachine = (Machine*)mouseState->carrying;//look out for seg faults!
     SDL_Point carrySize = highlight->getSize();
+    //
+    carryPos.x -= (carryPos.x < 0) ? 1 : 0;//negatives are dumb so here we are
+    carryPos.y -= (carryPos.y < 0) ? 1 : 0;//still snaps up to 0 (it's a feature not a bug)
     //
     if(carryPos.x < 0 || carryPos.x + carrySize.x > fieldSize.x || carryPos.y < 0 || carryPos.y + carrySize.y > fieldSize.y){
         return 0;

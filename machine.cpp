@@ -172,7 +172,7 @@ bool Belt::process(){
         beltStart = 0;
     }
     //
-    printf("size: (%d, %d), pos: (%d, %d), beltsize: %d\n", size.x, size.y, position.x, position.y, beltSize);
+    //printf("size: (%d, %d), pos: (%d, %d), beltsize: %d\n", size.x, size.y, position.x, position.y, beltSize);
     //
     if(inputMattes[0] != nullptr){//a material has been input
         movingMattes[beltStart] = inputMattes[0];//add matte to belt
@@ -236,7 +236,12 @@ void Belt::render(SDL_Renderer* rend, SDL_Point camPos){
         Machine::render(rend, camPos);
     }else{
         //TODO: account for belt direction
-        int startOffset = PX_CELL_SIZE * (processTimer % (machineSpeed / 4)) / machineSpeed;
+        int startOffset;
+        if(direction == 0 || direction == 3){//up or left
+            startOffset = PX_CELL_SIZE * ((machineSpeed / 4) - (processTimer % (machineSpeed / 4))) / machineSpeed;
+        }else{
+            startOffset = PX_CELL_SIZE * (processTimer % (machineSpeed / 4)) / machineSpeed;
+        }
         int colorStart = (processTimer % (machineSpeed / 2)) / (machineSpeed / 4);
         int offset;
         SDL_Rect curRect;
